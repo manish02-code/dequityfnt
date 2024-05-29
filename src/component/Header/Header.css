@@ -1,0 +1,38 @@
+.custom-shadow {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  }
+
+  .custom-border {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+  }
+
+
+  .nav-link-custom{
+    margin-right: 20px;
+    -webkit-text-fill-color: darkslategrey;
+    font-size: 20px; 
+  }
+.nav-link-custom:hover,
+.nav-link-custom:focus {
+  transition: background-color 0.3s;
+
+}
+
+.nav-link-custom:hover,
+.nav-link-custom:focus {
+  background-color: rgba(151, 155, 156, 0.637);
+  color: white;
+  -webkit-text-fill-color: black;
+}
+
+.nav-link-custom-active {
+  background-color: lightblue;
+  color: white;
+}
+
+.nav-link-rounded {
+    border-radius: 20px; /* You can adjust the radius to your liking */
+  }
+  .custom-radio-label input:checked+.custom-radio-button {
+    background-color: rgb(23, 23, 24); /* Change this to the desired background color */
+}

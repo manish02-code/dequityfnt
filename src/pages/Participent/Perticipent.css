@@ -1,0 +1,43 @@
+.image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh; /* Adjust the height as needed */
+  }
+
+  .page-container {
+    text-align: center;
+  }
+  
+  .page-heading {
+    margin-bottom: 20px;
+  }
+  
+  .image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 50vh; /* Adjust the height as needed */
+  }
+  .small-image {
+    width: 300px; /* Set the desired width */
+    height: auto; /* Maintain aspect ratio */
+  }
+  thead th {
+    position: sticky;
+    top: 0;
+    background-color: white;
+    z-index: 1;
+  }
+
+  .hover-row {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    cursor: pointer;
+  }
+  
+  .hover-row:hover {
+    transform: translateZ(20px);
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 50px;
+   background-color:  rgba(90, 247, 124, 0.2) ;
+  }
