@@ -3,13 +3,15 @@ import { Container, Nav, Navbar, Dropdown } from 'react-bootstrap';
 import "./Header.css";
 import { Link } from 'react-router-dom';
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { web3Accounts, web3Enable, web3FromSource,web3FromAddress } from '@polkadot/extension-dapp';
+import { web3Accounts, web3Enable, web3FromSource, web3FromAddress } from '@polkadot/extension-dapp';
 import { useNavigate } from "react-router-dom"
+import { MDBDropdown, MDBDropdownMenu, MDBDropdownToggle, MDBDropdownItem } from 'mdb-react-ui-kit';
 
+import { cryptoWaitReady, mnemonicGenerate, mnemonicToMiniSecret, encodeAddress,     } from '@polkadot/util-crypto';
+import Keyring from '@polkadot/keyring';
+import keyring from '@polkadot/ui-keyring';
 
-import { cryptoWaitReady, mnemonicGenerate, mnemonicToMiniSecret, encodeAddress } from '@polkadot/util-crypto';
-import  Keyring from '@polkadot/keyring';
-
+import { u8aToHex, stringToU8a, hexToU8a, u8aToString } from '@polkadot/util';
 
 
 import {
@@ -22,6 +24,7 @@ import {
     MDBModalBody,
     MDBModalFooter,
     MDBRadio,
+    MDBInput,
 } from 'mdb-react-ui-kit';
 
 function Header() {
@@ -37,7 +40,6 @@ function Header() {
 
 
     const [basicModal2, setBasicModal2] = useState(false);
-    const toggleOpen2 = () => setBasicModal2(!basicModal2);
 
 
     const [selectedValue, setSelectedValue] = useState(null);
@@ -47,16 +49,16 @@ function Header() {
 
     const createAccount = async () => {
         try {
-     
+
             await cryptoWaitReady();
-       
+
 
             const extensions = await web3Enable('Manish');
             if (extensions.length === 0) {
                 console.error('No extension installed or authorized');
                 return;
             }
-   
+
             const mnemonic = mnemonicGenerate();
             console.log('Mnemonic:', mnemonic);
 
@@ -70,9 +72,9 @@ function Header() {
             const json = pair.toJson('123456'); // Replace 'your-password' with your desired password
 
 
-         
 
-    
+
+
             const accounts = await web3Accounts();
             if (accounts.length === 0) {
                 console.error('No accounts available');
@@ -80,7 +82,7 @@ function Header() {
             }
             console.log('Accounts fetched from extension:', accounts);
 
-           
+
             const injector = await web3FromSource(accounts[0].meta.source);
 
 
@@ -99,25 +101,26 @@ function Header() {
             console.error('Error creating account:', error);
         }
     };
-    createAccount()
+
 
 
     const handleChange = (event) => {
         setSelectedValue(event.target.value);
         console.log("Selected Value:", event.target.value);
+        CreateAccount()
 
 
-        if(event.target.value === "Buyer"){
-            navigate('/DataCollector/CreateProfileBuyer')
-            toggleOpen2()
-       
-    
+        // if (event.target.value === "Buyer") {
+        //     navigate('/DataCollector/CreateProfileBuyer')
+        //     toggleOpen2()
 
-        }else{
-        navigate("/Perticipent/CreateProfile")
-        toggleOpen2()
-    
-        }
+
+
+        // } else {
+        //     navigate("/Perticipent/CreateProfile")
+        //     toggleOpen2()
+
+        // }
     };
 
     const navigate = useNavigate();
@@ -149,7 +152,7 @@ function Header() {
 
 
     const conn = async (account) => {
-        const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+        const wsProvider = new WsProvider('ws://3.109.51.55:9944');
         const api = await ApiPromise.create({ provider: wsProvider });
         setapi(api)
 
@@ -158,22 +161,22 @@ function Header() {
         const data2 = await api.query.hrmp.offerCreatorProfile(account);
 
 
-        if (data.toPrimitive() == null && data2.toPrimitive()  == null) {
+        if (data.toPrimitive() == null && data2.toPrimitive() == null) {
 
             toggleOpen()
             // setSelectedAccount()
 
 
         } else {
-           
-            if(data.toPrimitive() != null){
+
+            if (data.toPrimitive() != null) {
                 setParticipantProfileInfo(data.toPrimitive())
                 console.log(data.toPrimitive())
                 localStorage.setItem('Selected Account Profile', ParticipantProfileInfo);
                 navigate("/Perticipent")
 
 
-            }else{
+            } else {
                 setParticipantProfileInfo(data2.toPrimitive())
                 console.log(data2.toPrimitive())
 
@@ -215,7 +218,7 @@ function Header() {
 
 
 
-  
+
 
     const CreateProfile = () => {
 
@@ -248,6 +251,194 @@ function Header() {
         toggleOpen()
         setSelectedAccount()
     }
+
+    /////////////////////////////////////////////////////////////////////////////////////////
+    //               New Account Logic
+
+    const [modalStep, setModalStep] = useState(1);
+    const [mnemonic, setMnemonic] = useState('');
+    const [userMnemonic, setUserMnemonic] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
+    const [accountName, setaccountName] = useState('');
+    const [alertMessage, setAlertMessage] = useState("");
+    const [accountCreatModal, setaccountCreatModal] = useState(false);
+    const [accountCreatModal3, setaccountCreatModal3] = useState(false);
+    const [RSApublic, setRSApublic] = useState("");
+    const [RSAprivet, setRSAprivet] = useState("");
+    const accountCreatModalToggle = () => setaccountCreatModal(!accountCreatModal);
+    const accountCreatModalToggle3 = () => setaccountCreatModal3(!accountCreatModal3);
+
+
+
+    const generateMnemonic = () => {
+        const mnemonic = mnemonicGenerate();
+        setMnemonic(mnemonic);
+        setModalStep(2);
+    };
+
+    const confirmMnemonic = () => {
+        if (userMnemonic !== mnemonic) {
+            setAlertMessage("Mnemonics do not match. Please try again.");
+        } else {
+            setModalStep(3);
+        }
+    };
+
+    const handlePasswordSubmit = async () => {
+        if (password !== confirmPassword) {
+            setAlertMessage("Passwords do not match. Please try again.");
+            return;
+        }
+
+        try {
+
+            await cryptoWaitReady().then(() => {
+                // load all available addresses and accounts
+                keyring.loadAll({ ss58Format: 42, type: 'sr25519' });
+              
+                // additional initialization here, including rendering
+              });
+        
+            if (!accountName) {
+                setAlertMessage("Account name is required.");
+                return;
+            }
+            const existingAccountNames = getAllAccountNames();
+            if (existingAccountNames.includes(accountName)) {
+                setAlertMessage("Account name already exists. Please choose a different name.");
+                return;
+            }
+            // await encryptAndStoreMnemonic(mnemonic, password, accountName);
+
+            // add the account, encrypt the stored JSON with an account-specific password
+            const { pair, json } = keyring.addUri(mnemonic, password, { name: accountName });
+           
+
+
+            function downloadJson(json, fileName) {
+                const jsonStr = JSON.stringify(json);
+                const blob = new Blob([jsonStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = fileName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+              }
+              
+              // Trigger the download
+              downloadJson(json, `${accountName}.json`);
+
+
+
+
+
+            setAlertMessage("Account created and saved successfully.");
+            setaccountCreatModal(false);
+        } catch (error) {
+            console.error(error);
+            setAlertMessage("An error occurred during encryption.");
+        }
+    };
+
+
+
+
+    const saveAccountName = (accountName) => {
+        let accountNames = JSON.parse(localStorage.getItem('accountNames')) || [];
+        accountNames.push(accountName);
+        localStorage.setItem('accountNames', JSON.stringify(accountNames));
+    };
+
+
+    const getAllAccountNames = () => {
+        return JSON.parse(localStorage.getItem('accountNames')) || [];
+    };
+
+
+    const encryptAndStoreMnemonic = async (mnemonic, password, accountName) => {
+        await cryptoWaitReady();
+        const miniSecret = mnemonicToMiniSecret(mnemonic, password);
+        const encoded = u8aToHex(miniSecret);
+        localStorage.setItem(`encryptedMnemonic_${accountName}`, encoded);
+        saveAccountName(accountName);
+        console.log("Account created and saved successfully.");
+    };
+
+
+    // const decryptMnemonic = async (accountName, password) => {
+    //     try {
+    //         await cryptoWaitReady();
+    //         const encrypted = localStorage.getItem(`encryptedMnemonic_${accountName}`);
+    //         if (!encrypted) {
+    //             throw new Error("No encrypted mnemonic found for this account");
+    //         }
+    //         const miniSecret = hexToU8a(encrypted);
+    //         const mnemonic = mnemonicToSeed(miniSecret, password);
+    //         return mnemonic;
+    //     } catch (error) {
+    //         console.error("Error during decryption:", error.message);
+    //         throw new Error("Failed to decrypt mnemonic");
+    //     }
+    // };
+
+
+   
+    const accounts33 = keyring.getAccounts();
+    accounts33.forEach(({ address, meta, publicKey }) =>
+        console.log(address, JSON.stringify(meta), u8aToHex(publicKey))
+      );
+
+     
+
+     
+
+    const fetchAllAccounts = () => {
+        const accountNames = getAllAccountNames();
+        return accountNames.map(accountName => {
+            const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${accountName}`);
+            return { accountName, encryptedMnemonic };
+        });
+    };
+
+    // Example usage
+    // const accounts1 = fetchAllAccounts();
+    // console.log("All accounts:", accounts1);
+
+
+    // const handleAccountRetrieval = async (accountName, password) => {
+    //     try {
+    //         const mnemonic = await decryptMnemonic(accountName, password);
+    //         console.log("Decrypted mnemonic:", mnemonic);
+    //         // Perform any further actions with the mnemonic
+    //     } catch (error) {
+    //         setAlertMessage(error.message);
+    //     }
+    // };
+
+
+
+
+    const CreateAccount = async () => {
+        setaccountCreatModal(!accountCreatModal)
+
+
+    }
+
+    const toggleOpen2 = () => {
+        setBasicModal2(!basicModal2)
+
+    };
+
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////
+
+
+
     return (
         <div style={{ paddingTop: '10px' }}>
             <Navbar bg="light" variant="light" className="custom-shadow custom-border" style={{ maxWidth: '1200px', margin: 'auto', borderRadius: '10px', boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)', border: '1px solid rgba(0, 0, 0, 0.1)' }}>
@@ -268,40 +459,28 @@ function Header() {
                             </Nav>
                         </div>
                         <div>
-                            <Dropdown >
-                                {accounts.length === 0 ? (
-                                    <Dropdown.Toggle onClick={handleConnection} variant="secondary" id="dropdown-basic">
-                                        Connect Wallet
-                                    </Dropdown.Toggle>
-                                ) : null}
-                                {accounts.length > 0 && !selectedAccount ? (
-                                    <>
-                                        <select onChange={changeAccount}>
-                                            <option value="" disabled selected hidden>
-                                                Choose account
-                                            </option>
-                                            {accounts.map((acc, index) => (
-                                                <option key={index} value={acc.address}>
-                                                    {acc.address}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </>
-                                ) : null}
-                                {selectedAccount ? selectedAccount.address : null}
+                            <>
 
-                                <Dropdown.Menu>
+                                <MDBDropdown group>
+                                    <MDBDropdownToggle color='dark'>Action</MDBDropdownToggle>
+                                    <MDBDropdownMenu>
+                                        <MDBDropdownItem link onClick={() => setBasicModal2(true)}>Create Account</MDBDropdownItem>
+                                        <MDBDropdownItem link >Select Account </MDBDropdownItem>
+                                        <div className='dropdown-divider' />
+                                        <MDBDropdownItem link>Log out</MDBDropdownItem>
 
-                                    {/* Add dropdown items here */}
-                                    <Dropdown.Item >Create Profile</Dropdown.Item>
-                                    {/* Add more dropdown items as needed */}
-                                </Dropdown.Menu>
-                            </Dropdown>
+                                    </MDBDropdownMenu>
+
+                                </MDBDropdown>
+
+                            </>
                         </div>
                     </div>
                 </Container>
             </Navbar>
             <br />
+
+
             <MDBModal open={basicModal} onClose={() => setBasicModal(false)} tabIndex='-1'>
                 <MDBModalDialog>
                     <MDBModalContent>
@@ -369,8 +548,82 @@ function Header() {
                             <MDBBtn color='danger' onClick={toggleOpen2}>
                                 Close
                             </MDBBtn>
-                         
+
                         </MDBModalFooter>
+                    </MDBModalContent>
+                </MDBModalDialog>
+            </MDBModal>
+
+
+
+
+
+
+
+
+            <MDBModal tabIndex='-1' open={accountCreatModal} onClose={() => setaccountCreatModal(false)}>
+                <MDBModalDialog centered>
+                    <MDBModalContent>
+                        <MDBModalHeader>
+                            <MDBModalTitle>Account Setup</MDBModalTitle>
+                            <MDBBtn className='btn-close' color='none' onClick={accountCreatModalToggle}></MDBBtn>
+                        </MDBModalHeader>
+                        <MDBModalBody>
+                            {modalStep === 1 && (
+                                <div>
+                                    <p>Click the button below to generate a new mnemonic phrase.</p>
+                                    <MDBBtn onClick={generateMnemonic}>Generate Mnemonic</MDBBtn>
+                                </div>
+                            )}
+                            {modalStep === 3 && (
+                                <div>
+                                    <MDBInput
+                                        wrapperClass='mb-4'
+                                        label='Enter Name for Account'
+                                        size='lg'
+                                        value={accountName}
+                                        onChange={(e) => setaccountName(e.target.value)}
+                                    />
+                                    <MDBBtn onClick={() => { setModalStep(4) }}>Next</MDBBtn>
+                                </div>
+                            )}
+                            {modalStep === 2 && (
+                                <div>
+                                    <p>Your generated mnemonic is:</p>
+                                    <p><strong>{mnemonic}</strong></p>
+                                    <MDBInput
+                                        wrapperClass='mb-4'
+                                        label='Confirm Mnemonic'
+                                        size='lg'
+                                        type='text'
+                                        value={userMnemonic}
+                                        onChange={(e) => setUserMnemonic(e.target.value)}
+                                    />
+                                    <MDBBtn onClick={confirmMnemonic}>Confirm Mnemonic</MDBBtn>
+                                </div>
+                            )}
+                            {modalStep === 4 && (
+                                <div>
+                                    <MDBInput
+                                        wrapperClass='mb-4'
+                                        label='Password'
+                                        size='lg'
+                                        type='password'
+                                        value={password}
+                                        onChange={(e) => setPassword(e.target.value)}
+                                    />
+                                    <MDBInput
+                                        wrapperClass='mb-4'
+                                        label='Confirm Password'
+                                        size='lg'
+                                        type='password'
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                    />
+                                    <MDBBtn onClick={handlePasswordSubmit}>Submit</MDBBtn>
+                                </div>
+                            )}
+                        </MDBModalBody>
                     </MDBModalContent>
                 </MDBModalDialog>
             </MDBModal>

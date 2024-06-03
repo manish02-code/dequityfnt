@@ -25,6 +25,10 @@ import { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
 import { useNavigate } from "react-router-dom"
 
 export default function DataCollector() {
+  const [GifULR, setGifURL] = useState("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
+  const [addRecordStatus, setaddRecordStatus] = useState(' ')
+  const [uploadLoading, setuploadLoading] = useState(false)
+
   const [host, setHost] = useState("");
   const [port, setPort] = useState(22);
   const [paraId, setParaId] = useState(null);
@@ -53,6 +57,14 @@ export default function DataCollector() {
 
   const sendModalToggle = () => setSendModal(!sendModal);
 
+  const addrecordmodal = () => {
+    setuploadLoading(!uploadLoading)
+    setGifURL("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
+    setaddRecordStatus(" ")
+
+};
+
+
 
   const navigate = useNavigate();
 
@@ -67,10 +79,12 @@ export default function DataCollector() {
 
     ws.onmessage = (event) => {
       setStatusMessage(event.data);
+      setaddRecordStatus(event.data)
     };
 
     ws.onclose = () => {
       setStatusMessage('Disconnected from WebSocket server');
+      setaddRecordStatus("Disconnected");
     };
 
     return () => {
@@ -85,6 +99,7 @@ export default function DataCollector() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setuploadLoading(true)
 
     try {
       if (selectedFile) {
@@ -102,30 +117,33 @@ export default function DataCollector() {
         });
 
         setAlertMessage(response.data.message);
+        setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
       } else {
         setAlertMessage("Please select a file");
       }
     } catch (error) {
       console.error(error);
       setAlertMessage(error.response?.data?.message || "An error occurred");
+      setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
+
     } finally {
       setLoading(false);
     }
   };
 
-  const generateMnemonic = () => {
-    const mnemonic = mnemonicGenerate();
-    setMnemonic(mnemonic);
-    setModalStep(2);
-  };
+    const generateMnemonic = () => {
+      const mnemonic = mnemonicGenerate();
+      setMnemonic(mnemonic);
+      setModalStep(2);
+    };
 
-  const confirmMnemonic = () => {
-    if (userMnemonic !== mnemonic) {
-      setAlertMessage("Mnemonics do not match. Please try again.");
-    } else {
-      setModalStep(3);
-    }
-  };
+    const confirmMnemonic = () => {
+      if (userMnemonic !== mnemonic) {
+        setAlertMessage("Mnemonics do not match. Please try again.");
+      } else {
+        setModalStep(3);
+      }
+    };
 
   const handlePasswordSubmit = async () => {
     if (password !== confirmPassword) {
@@ -307,6 +325,49 @@ export default function DataCollector() {
           </MDBModalContent>
         </MDBModalDialog>
       </MDBModal>
+
+
+
+
+      {uploadLoading ? (
+            <>
+
+              <MDBModal staticBackdrop open={uploadLoading}  tabIndex='-1'>
+                <MDBModalDialog >
+                  <MDBModalContent>
+                    <MDBModalHeader>
+                      <MDBModalTitle></MDBModalTitle>
+                      {/* <MDBBtn className='btn-close' color='none' onClick={addrecordmodal}></MDBBtn> */}
+                    </MDBModalHeader>
+                    <MDBModalBody>
+                      <div>
+                        <h3 style={{ fontSize: '1.5rem' }}>{addRecordStatus}</h3>
+                        <figure className='figure'>
+                          <img
+                            src={GifULR}
+                            className='figure-img img-fluid rounded shadow-3 mb-3'
+                            alt='...'
+                            style={{ maxWidth: '100%', height: 'auto' }}
+                          />
+                        </figure>
+                      </div>
+
+                    </MDBModalBody>
+
+                    <MDBModalFooter>
+                      <MDBBtn color='danger' onClick={addrecordmodal} >
+                        {loading ? "Cancel":"Close"}
+                      </MDBBtn>
+                      <MDBBtn color='sucess' disabled={loading} onClick={handleClick} >
+                        Conntect to Chain
+                      </MDBBtn>
+                    </MDBModalFooter>
+                  </MDBModalContent>
+                </MDBModalDialog>
+              </MDBModal>
+            </>
+          ) : null}
+
 
     </div>
   );

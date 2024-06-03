@@ -1,0 +1,86 @@
+[
+    {
+        "parents": 0,
+        "interior": {
+            "here": null
+        }
+    },
+    {
+        "parents": 1,
+        "interior": {
+            "here": null
+        }
+    },
+    [
+        {
+            "withdrawAsset": [
+                {
+                    "id": {
+                        "concrete": {
+                            "parents": 0,
+                            "interior": {
+                                "here": null
+                            }
+                        }
+                    },
+                    "fun": {
+                        "fungible": 1000000000000
+                    }
+                }
+            ]
+        },
+        {
+            "buyExecution": {
+                "fees": {
+                    "id": {
+                        "concrete": {
+                            "parents": 0,
+                            "interior": {
+                                "here": null
+                            }
+                        }
+                    },
+                    "fun": {
+                        "fungible": 1000000000000
+                    }
+                },
+                "weightLimit": {
+                    "unlimited": null
+                }
+            }
+        },
+        {
+            "transact": {
+                "originKind": "Native",
+                "requireWeightAtMost": {
+                    "refTime": 40000000000,
+                    "proofSize": 65536
+                },
+                "call": {
+                    "encoded": "0x0c20417373687369736890106d616c"
+                }
+            }
+        },
+        {
+            "refundSurplus": null
+        },
+        {
+            "depositAsset": {
+                "assets": {
+                    "wild": {
+                        "allCounted": 1
+                    }
+                },
+                "beneficiary": {
+                    "parents": 0,
+                    "interior": {
+                        "x1": {
+                            "parachain": 2001
+                        }
+                    }
+                }
+            }
+        }
+    ],
+    "0x98fae2d5f838e3f91349d203d4f8f1c49978557af98ce2043082c9bcb01cf0aa"
+]

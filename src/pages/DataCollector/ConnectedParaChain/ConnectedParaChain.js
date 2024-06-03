@@ -32,9 +32,12 @@ import { Keyring } from '@polkadot/keyring';
 export default function ConnectedCollector() {
     const [copyStatusImage, setcopyStatusImage] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
     const [copyStatusImage2, setcopyStatusImage2] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+   
+    const [GifULR, setGifURL] = useState("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
+    const [addRecordStatus, setaddRecordStatus] = useState(' ')
+    const [uploadLoading, setuploadLoading] = useState(false)
 
     const [ChainID, setChainID] = useState()
-    const [connectedStatusColor, setconnectedStatusColor] = useState("#B9EDCB")
     const [parachianConnectionStatus, setparachianConnectionStatus] = useState(false)
     const [sovereignAccount, setsovereignAccount] = useState('')
     const [sudoAccount, setSudoAccout] = useState('')
@@ -50,28 +53,44 @@ export default function ConnectedCollector() {
     const [Participantethnicity, setParticipantethnicity] = useState("")
     const [ParticipantaccountID, setParticipantaccountID] = useState("")
     const [perticipentModal, setperticipentModal] = useState(false);
-    const CreateParticipent = () => setperticipentModal(!perticipentModal);
 
+    const CreateParticipent = () => {
+        setParticipantname(" ")
+        setParticipantage(null)
+        setParticipantgender(" ")
+        setParticipantethnicity(" ")
+        setParticipantaccountID(" ")
+        setperticipentModal(!perticipentModal)
+    };
+
+
+    const addrecordmodal = () => {
+        setuploadLoading(!uploadLoading)
+        setGifURL("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
+        setaddRecordStatus(" ")
+
+    };
 
 
     const createsetParticipant = async () => {
-        console.log(Participantname)
-        console.log(Participantage)
-        console.log(Participantgender)
-        console.log(Participantethnicity)
-        console.log(ParticipantaccountID)
+        addrecordmodal()
+        setaddRecordStatus("Creating Participant")
         const encodedCallData = getEncodedCallData(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID)
 
         const encodedCallDataHex = await createXcmCall(encodedCallData);
-        sendXcmCall(encodedCallDataHex);
-
-
-
-
 
     }
 
 
+    const depositeData= async()=>{
+        addrecordmodal()
+        setaddRecordStatus("Depositing Data..")
+        const encodedCallData = await getDeositdataEncodedCallData("abc","123abc","5EvZp68brb9ta8DH4xbnHemSQijCCYTWN8YfbbT4wKXkPtrH")
+        console.log(encodedCallData)
+
+        const encodedCallDataHex = await createXcmCall(encodedCallData);
+
+    }
 
 
     const conn = async () => {
@@ -98,118 +117,60 @@ export default function ConnectedCollector() {
 
     async function getEncodedCallData(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID) {
         const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
-        let api = await ApiPromise.create({ provider: wsProvider })
-        // Define the call parameters
-        const name = Participantname;
-        const age = Participantage;
-        const gender = Participantgender;
-        const ethnicity = Participantethnicity;
-        const accountId = encodeAddress(ParticipantaccountID, 42);
-
+        let api = await ApiPromise.create({ provider: wsProvider });
+    
+    
         // Create the extrinsic call
-        const call = api.tx.hrmp.createParticipantProfileXcm(name, age, gender, ethnicity, accountId);
-
+        const call =await api.tx.hrmp.createParticipantProfileXcm(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID);
+    
         // Get the encoded call data
-        const encodedCallData = call.toHex();
+        let encodedCallData = call.toHex();
+        
+        console.log("Encoded Call Data (not modified): ", encodedCallData);
+    
+    
 
-        console.log("Encoded Call Data: ", encodedCallData)
+    
+        return removeBefore3c(encodedCallData);
+    }
 
-        return encodedCallData;
+    
+    async function getDeositdataEncodedCallData(ParticipantEnKey, ParticipantIpfsCid,  ParticipantaccountID) {
+        const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+        let api = await ApiPromise.create({ provider: wsProvider });
+    
+    
+        // Create the extrinsic call
+        const call =await api.tx.hrmp.depositeDataPWalletXcm(ParticipantEnKey, ParticipantIpfsCid,ParticipantaccountID);
+    
+        // Get the encoded call data
+        let encodedCallData = call.toHex();
+        
+        console.log("Encoded Call Data (not modified): ", encodedCallData);
+    
+    
+        return removeBefore3c(encodedCallData);
     }
 
 
-    const constractXCMMessage = async (encodeCallData, paraID) => {
-
-        const dest = {
-            V2: {
-                parents: 1,
-                interior: [] // Define the interior junctions as required
-            }
-        };
-
-
-        const messages = {
-            V2: [
-                {
-                    WithdrawAsset: {
-                        assets: [
-                            {
-                                id: { Concrete: { parents: 0, interior: [] } },
-                                fun: { Fungible: 1000000000000 }
-                            }
-                        ]
-                    }
-                },
-
-
-                {
-                    BuyExecution: {
-                        fees: [
-                            {
-                                id: { Concrete: { parents: 0, interior: [] } },
-                                fun: { Fungible: 1000000000000 }
-                            }
-                        ],
-                        weightLimit: 'Unlimited'
-                    }
-                },
-                {
-                    Transact: {
-                        originType: "Native",
-                        requireWeightAtMost: 40000000000,
-                        call: {
-                            encoded: encodeCallData
-                        }
-                    }
-                }, {
-                    RefundSurplus: {}
-                },
-                {
-
-                    DepositAsset: {
-                        assets: { Definite: 1 },
-                        maxAssets: 1,
-                        beneficiary: {
-                            parents: 0,
-                            interior: {
-                                X1: {
-                                    Parachain: paraID
-                                }
-                            }
-                        }
-                    }
-
-                }
-            ]
-        };
-
-
-        try {
-            const wsProvider = new WsProvider(`ws://${cntNodeIp}:8844`);
-            const api = await ApiPromise.create({ provider: wsProvider });
-
-
-
-            const message = {
-                V2: messages
-            };
-
-
-            const keyring = new Keyring({ type: 'sr25519' });
-            const alice = keyring.addFromUri('//Alice');
 
 
 
 
-        } catch (error) {
+    async function removeBefore3c(encodedCallData) {
+        const encodedCallDataStr = await encodedCallData;
 
-            console.error(error)
-
+        const index = encodedCallDataStr.indexOf('3c');
+        if (index ) {
+            return '0x' + encodedCallDataStr.substring(index);
+        } else {
+            throw new Error('"3c" not found in the encoded call data');
         }
-
     }
 
 
+
+ 
 
 
 
@@ -217,112 +178,152 @@ export default function ConnectedCollector() {
 
     async function createXcmCall(encodedCallData) {
         try {
+            const endcalldata = await encodedCallData;
+            console.log('Encoded Call Data:', endcalldata);
+    
             const wsProvider = new WsProvider(`ws://${cntNodeIp}:8844`);
             const api = await ApiPromise.create({ provider: wsProvider });
     
             const dest = {
-                V2: {
-                    parents: 1,
-                    interior: 'Here'
+                "V2": {
+                    "parents": 1,
+                    "interior": "Here"
                 }
             };
     
-            // Construct the instructions
-            const withdrawAsset = {
-                WithdrawAsset: {
-                    assets: [
-                        {
-                            id: { Concrete: { parents: 0, interior: 'Here' } },
-                            fun: { Fungible: 1000000000000 }
+            const messages = {
+                "V2": [
+                    {
+                        "WithdrawAsset": [
+                            {
+                                "id": {
+                                    "Concrete": {
+                                        "parents": 0,
+                                        "interior": "Here"
+                                    }
+                                },
+                                "fun": {
+                                    "Fungible": 1000000000000
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "BuyExecution": {
+                            "fees": {
+                                "id": {
+                                    "Concrete": {
+                                        "parents": 0,
+                                        "interior": "Here"
+                                    }
+                                },
+                                "fun": {
+                                    "Fungible": 1000000000000
+                                }
+                            },
+                            "weightLimit": "Unlimited"
                         }
-                    ]
-                }
-            };
-    
-            const buyExecution = {
-                BuyExecution: {
-                    fees: [
-                        {
-                            id: { Concrete: { parents: 0, interior: 'Here' } },
-                            fun: { Fungible: 1000000000000 }
+                    },
+                    {
+                        "Transact": {
+                            "originType": "Native",
+                            "requireWeightAtMost": 40000000000,
+                            "call": {
+                                "encoded": endcalldata
+                            } 
                         }
-                    ],
-                    weightLimit: 'Unlimited'
-                }
-            };
-    
-            const transact = {
-                Transact: {
-                    originType: 'Native',
-                    requireWeightAtMost: 40000000000,
-                    call: {
-                        encoded: encodedCallData
-                    }
-                }
-            };
-    
-            const depositAsset = {
-                DepositAsset: {
-                    assets: { Definite:{}},
-                    maxAssets: 1,
-                    beneficiary: {
-                        parents: 0,
-                        interior: {
-                            X1: {
-                                Parachain: 2001
+                    },
+                    { "RefundSurplus": {} },
+                    {
+                        "DepositAsset": {
+                            "assets": {
+                                "Wild": "All"
+                            },
+                            "maxAssets": 1,
+                            "beneficiary": {
+                                "parents": 0,
+                                "interior": {
+                                    "X1": {
+                                        "Parachain": 2000
+                                    }
+                                }
                             }
                         }
                     }
+                ]
+            };
+    
+            const keyring = new Keyring({ type: 'sr25519' });
+            const alice = keyring.addFromUri(process.env.ALICE_URI || '//Alice');
+    
+            const xcmCall = api.tx.polkadotXcm.send(dest, messages);
+            setaddRecordStatus('Sending Transection');
+    
+            const unsub = await api.tx.sudo.sudo(xcmCall).signAndSend(alice, { nonce: -1 }, ({ status, events, dispatchError }) => {
+                if (status.isInBlock) {
+                    console.log(`Transaction included at blockHash ${status.asInBlock}`);
+                    setaddRecordStatus("Transaction Include in Block")
+                } else if (status.isFinalized) {
+                    console.log(`Transaction finalized at blockHash ${status.asFinalized}`);
+                    setaddRecordStatus("Transaction finalized")
+                    setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
+                    unsub();
+                } else {
+                    console.log(`Transaction status: ${status.type}`);
+                    setaddRecordStatus(`Transaction status: ${status.type}`)
+                   
+                } 
+
+    
+                if (dispatchError) {
+                    if (dispatchError.isModule) {
+                        const decoded = api.registry.findMetaError(dispatchError.asModule);
+                        const { documentation, name, section } = decoded;
+                        console.error(`Error: ${section}.${name}: ${documentation.join(' ')}`);
+                        setaddRecordStatus("Something is Worong")
+                        setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
+                    } else {
+                        console.error(`Error: ${dispatchError.toString()}`);
+                        setaddRecordStatus("Something is Worong")
+                        setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
+                    }
                 }
-            };
     
-            const refundSurplus = {
-                RefundSurplus: {}
-            };
+                events.forEach(({ event: { method, section }, phase, event }) => {
+                    console.log(`\t${phase.toString()}: ${section}.${method}:: ${event.data.toString()}`);
+                });
+            });
     
-            // Combine instructions into the message
-            const message = {
-                V2: [withdrawAsset, buyExecution, transact, depositAsset, refundSurplus]
-            };
-    
-            console.log('Destination:', JSON.stringify(dest));
-            console.log('Message:', JSON.stringify(message));
-    
-            const xcmCall = api.tx.polkadotXcm.send(dest, message);
-    
-            const sudoCall = api.tx.sudo.sudo(xcmCall);
-    
-            const encodedCallDataHex = sudoCall.toHex();
-    
-            console.log('Encoded Call Data:', encodedCallDataHex);
-            return encodedCallDataHex;
         } catch (error) {
             console.error('Error creating XCM call:', error);
+            setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
         }
     }
     
+    
+
     async function sendXcmCall(encodedCallDataHex) {
         try {
             const wsProvider = new WsProvider(`ws://${cntNodeIp}:8844`);
             const api = await ApiPromise.create({ provider: wsProvider });
-    
+
             const keyring = new Keyring({ type: 'sr25519' });
             const alice = keyring.addFromUri('//Alice');
-    
+
             // Create the call from the encoded data
             const call = api.tx(encodedCallDataHex);
-    
+
             console.log('Created call from encoded data:', call.toHuman());
-    
+
             // Sign and send the transaction
             const hash = await call.signAndSend(alice);
-    
+
             console.log('Transaction sent with hash:', hash.toHex());
         } catch (error) {
             console.error('Error sending XCM call:', error);
         }
     }
-    
+
 
 
 
@@ -519,8 +520,8 @@ export default function ConnectedCollector() {
                                             </MDBBtn>
                                         </div>
                                         <div>
-                                            <MDBBtn size="lg" rounded className='bg-success'>
-                                                Deosite Data
+                                            <MDBBtn size="lg" rounded className='bg-success' onClick={depositeData}>
+                                                Deposite Data
                                             </MDBBtn>
                                         </div>
                                     </div>
@@ -558,7 +559,7 @@ export default function ConnectedCollector() {
 
 
 
-            <MDBModal tabIndex='-1' open={perticipentModal} onClose={() => setperticipentModal(false)}>
+            <MDBModal staticBackdrop tabIndex='-1' open={perticipentModal} onClose={() => setperticipentModal(false)}>
                 <MDBModalDialog centered>
                     <MDBModalContent>
                         <MDBModalHeader>
@@ -615,6 +616,45 @@ export default function ConnectedCollector() {
                     </MDBModalContent>
                 </MDBModalDialog>
             </MDBModal>
+
+
+
+            
+          {uploadLoading ? (
+            <>
+
+              <MDBModal staticBackdrop open={uploadLoading}  tabIndex='-1'>
+                <MDBModalDialog >
+                  <MDBModalContent>
+                    <MDBModalHeader>
+                      <MDBModalTitle></MDBModalTitle>
+                      <MDBBtn className='btn-close' color='none' onClick={addrecordmodal}></MDBBtn>
+                    </MDBModalHeader>
+                    <MDBModalBody>
+                      <div>
+                        <h3 style={{ fontSize: '1.5rem' }}>{addRecordStatus}</h3>
+                        <figure className='figure'>
+                          <img
+                            src={GifULR}
+                            className='figure-img img-fluid rounded shadow-3 mb-3'
+                            alt='...'
+                            style={{ maxWidth: '100%', height: 'auto' }}
+                          />
+                        </figure>
+                      </div>
+
+                    </MDBModalBody>
+
+                    <MDBModalFooter>
+                      <MDBBtn color='danger' onClick={addrecordmodal} >
+                        Cancel
+                      </MDBBtn>
+                    </MDBModalFooter>
+                  </MDBModalContent>
+                </MDBModalDialog>
+              </MDBModal>
+            </>
+          ) : null}
 
 
 

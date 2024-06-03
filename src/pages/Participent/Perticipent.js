@@ -35,6 +35,7 @@ import { useRadioGroup } from '@mui/material';
 // import pinataSDK from '@pinata/sdk';
 import forge from 'node-forge';
 import CryptoJS from 'crypto-js';
+import axios from 'axios';
 
 
 export default function Participant() {
@@ -43,9 +44,6 @@ export default function Participant() {
   const [selectedAccount, setSelectedAccount] = useState("Test");
 
   const acc = localStorage.getItem('Selected Account')
-
-
-
 
 
   ////Profile info State
@@ -416,6 +414,13 @@ export default function Participant() {
     }
   };
 
+
+
+
+
+
+
+
   // //This use to ENcrypte file
   const EncrypteFileASE = async () => {
     addrecordmodal()
@@ -513,6 +518,48 @@ export default function Participant() {
       throw error;
     }
   };
+
+
+
+
+
+
+
+
+ const IPFSUplod2 = async (e) => {
+  e.preventDefault();
+ 
+  setuploadLoading(true)
+
+  try {
+    console.log(RSApublicKey)
+    if (file) {
+      const formData = new FormData();
+      formData.append('RSAKey', RSApublicKey);
+      formData.append('ReportFile', file);
+
+      const response = await axios.post('http://localhost:8080/IpfsKEys/UploadIPFS', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      setaddRecordStatus(response.data.message);
+      console.log(response)
+      setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
+    } else {
+      setaddRecordStatus("Please select a file");
+      setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
+    }
+  } catch (error) {
+    console.error(error);
+    setaddRecordStatus(error.response?.data?.message || "An error occurred");
+    setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
+
+  } 
+};
+
+
 
 
 
@@ -934,7 +981,7 @@ export default function Participant() {
                   <MDBBtn color='secondary' onClick={() => setScrollableModal(!setScrollableModal)}>
                     Cancel
                   </MDBBtn>
-                  <MDBBtn onClick={EncrypteFileASE}>Add Record</MDBBtn>
+                  <MDBBtn onClick={IPFSUplod2}>Add Record</MDBBtn>
                 </MDBModalFooter>
               </MDBModalContent>
             </MDBModalDialog>
