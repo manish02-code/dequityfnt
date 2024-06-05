@@ -28,7 +28,8 @@ import {
   MDBModalContent,
   MDBModalHeader,
   MDBModalBody,
-  MDBModalFooter, MDBFile
+  MDBModalFooter, MDBFile,
+  MDBCheckbox
 } from 'mdb-react-ui-kit';
 import { MDBTable, MDBTableHead, MDBTableBody } from 'mdb-react-ui-kit';
 import { useRadioGroup } from '@mui/material';
@@ -36,6 +37,8 @@ import { useRadioGroup } from '@mui/material';
 import forge from 'node-forge';
 import CryptoJS from 'crypto-js';
 import axios from 'axios';
+import { Keyring } from '@polkadot/keyring';
+import {  decrypt } from "n-krypta";
 
 
 export default function Participant() {
@@ -73,6 +76,17 @@ export default function Participant() {
   const [searchQuery2, setSearchQuery2] = useState('');
 
 
+  const [passwordModal, setpasswordModal] = useState(false);
+  const [password, setpassword] = useState('')
+  const togglePasswordModal = () => setpasswordModal(!passwordModal);
+
+
+  const [checked, setChecked] = useState(false);
+
+
+
+
+
 
 
   const filteredData = DataRecord.filter(item => {
@@ -95,12 +109,16 @@ export default function Participant() {
 
 
   const messagemodalOKbtn = () => {
+    setpassword('')
     addrecordmodal()
     setFile(null)
     setRSApublicKey(' ')
     setencryptedFile(null)
     setGifURL("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
     setuploadLoading(false)
+    setpasswordModal(false)
+    setChecked(false)
+    window.location.reload();
     navigate("/Perticipent")
 
   }
@@ -113,6 +131,7 @@ export default function Participant() {
   }
 
 
+
   ///This is use to take Raw file form User
   const handleFileChange = (e) => {
     const file = e.target.files[0];
@@ -120,11 +139,43 @@ export default function Participant() {
   };
 
 
+
+
+   // Decrypt mnemonic
+ const decryptMnemonic = async (encryptedData, password) => {
+  try {
+    const decryptedData = await decrypt(encryptedData, password);
+    return decryptedData;
+  } catch (error) {
+    console.error("Error decrypting mnemonic:", error);
+    throw new Error("Failed to decrypt mnemonic");
+  }
+};
+
+
+
+
+
   //This Function use Take RSA key of User
-  const userRSAPublicKey = (e) => {
+  const handlePasswordSubmit = async(e) => {
     // setencryptedFile(e.target.value);
-    setRSApublicKey(e.target.value)
+    const keyring = new Keyring({ type: 'sr25519' });
+    const selaccnt = localStorage.getItem('Selected Account');
+    console.log(selaccnt)
+  
+      const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selaccnt}`)
+      const tt = await decryptMnemonic(encryptedMnemonic, password)
+  
+    setRSApublicKey(tt.rsaPublicKey)
+    togglePasswordModal()
+    setChecked(true)
   };
+
+
+  const clickCheckBox =async()=>{
+    togglePasswordModal()
+
+  }
 
 
   const OfferID = (e) => {
@@ -249,105 +300,8 @@ export default function Participant() {
 
 
 
-// // This is used to encrypt the file
-// const EncrypteFileASE = async (file) => {
-//   addrecordmodal();
-  
-//   try {
-//     setaddRecordStatus("Encrypting Your Data. Please Wait...");
-    
-//     if (!file) {
-//       throw new Error("No file selected for encryption.");
-//     }
-
-//     const fileArrayBuffer = await file.arrayBuffer();
-//     const fileBytes = new Uint8Array(fileArrayBuffer);
-    
-//     const ASEkey = genRateASEKey();
-//     const key = CryptoJS.enc.Utf8.parse(ASEkey);
-    
-//     const encrypted = CryptoJS.AES.encrypt(CryptoJS.lib.WordArray.create(fileBytes), key, {
-//       mode: CryptoJS.mode.CBC, // Using CBC mode for better security
-//       padding: CryptoJS.pad.Pkcs7,
-//     });
-    
-//     const ecryKey = encryptAesKey(RSApublicKey, ASEkey);
-    
-//     const blob = new Blob([encrypted.toString()], { type: 'string' }); // Set appropriate MIME type
-    
-//     setencryptedFile(blob);
-    
-//     IPFSUplod(ecryKey);
-    
-//   } catch (error) {
-//     setaddRecordStatus("Encryption failed. Please try again.");
-//     setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
-//     console.error("Encryption error:", error);
-//   }
-// };
-
-// // This function is used to upload the encrypted file to IPFS
-// const IPFSUplod = async (ecryKey) => {
-//   setaddRecordStatus("Uploading Your Data");
-  
-//   try {
-//     if (!encryptedFile) {
-//       throw new Error("No encrypted file available for upload.");
-//     }
-
-//     const formData = new FormData();
-//     formData.append("file", encryptedFile);
-    
-//     const metadata = JSON.stringify({
-//       name: encryptedFile.name,
-
-//     });
-//     formData.append("pinataMetadata", metadata);
-    
-//     const options = JSON.stringify({
-//       cidVersion: 0,
-//     });
-//     formData.append("pinataOptions", options);
-    
-//     const res = await fetch(
-//       "https://api.pinata.cloud/pinning/pinFileToIPFS",
-//       {
-//         method: "POST",
-//         headers: {
-//               Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySW5mb3JtYXRpb24iOnsiaWQiOiI5Njc2NDBjZS1hZjEzLTQ3NTktYjA3ZS04OWU5MDdmYzI2MDAiLCJlbWFpbCI6InNwYXlib3kxNDlAZ21haWwuY29tIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsInBpbl9wb2xpY3kiOnsicmVnaW9ucyI6W3siaWQiOiJGUkExIiwiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjF9LHsiaWQiOiJOWUMxIiwiZGVzaXJlZFJlcGxpY2F0aW9uQ291bnQiOjF9XSwidmVyc2lvbiI6MX0sIm1mYV9lbmFibGVkIjpmYWxzZSwic3RhdHVzIjoiQUNUSVZFIn0sImF1dGhlbnRpY2F0aW9uVHlwZSI6InNjb3BlZEtleSIsInNjb3BlZEtleUtleSI6IjY1MzMzYWEyNDU3ZjE3NjU5ZWNkIiwic2NvcGVkS2V5U2VjcmV0IjoiZjYzYWUyMjZlMzNhNTVhNmYwYzNiZmViYjJiM2JmOWFiZmQzODBlN2MzZmNjOGMyYWRjZDkwNWYwZTYxMTc3NiIsImlhdCI6MTcxNTcxMzQ2NH0._d493g9SffhA_65zaCaVDLmwFKblzqnrqzWIRT6BnkU`,
-
-//         },
-//         body: formData,
-//       }
-//     );
-    
-//     const resData = await res.json();
-    
-//     if (resData.error) {
-//       setaddRecordStatus("Invalid request format.");
-//       setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
-//       console.error("Invalid request format:", resData.error);
-//       return;
-//     } else if (!ecryKey || !resData.IpfsHash) {
-//       setaddRecordStatus("Missing encryption key or IPFS hash.");
-//       setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
-//       console.error("Missing encryption key or IPFS hash.");
-//       return;
-//     } else {
-//       setipfsHash(resData.IpfsHash);
-//       await addRecordonChain(ecryKey, resData.IpfsHash);
-//       return resData;
-//     }
-//   } catch (error) {
-//     setaddRecordStatus("Upload failed. Please try again.");
-//     setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
-//     console.error("Error uploading file to IPFS:", error);
-//   }
-// };
-
-
-
-  // //This Function is use to Upload Encrypted file on IPFS
+ 
+ 
   const IPFSUplod = async (ecryKey) => {
     setaddRecordStatus("Uploading Your Data");
 
@@ -356,9 +310,9 @@ export default function Participant() {
       formData.append("file", file);
       const metadata = JSON.stringify({
         name: file.name,
-        type:file.type
-      
- 
+        type: file.type
+
+
       });
       formData.append("pinataMetadata", metadata);
 
@@ -445,10 +399,10 @@ export default function Participant() {
       });
 
       const ecryKey = encryptAesKey(RSApublicKey, ASEkey)
-      console.log(typeof(encrypted.toString()))
+      console.log(typeof (encrypted.toString()))
 
 
-      const blob = new Blob([encrypted.toString()], { name:file.name,type: "string" });
+      const blob = new Blob([encrypted.toString()], { name: file.name, type: "string" });
 
 
       setencryptedFile(blob)
@@ -526,38 +480,40 @@ export default function Participant() {
 
 
 
- const IPFSUplod2 = async (e) => {
-  e.preventDefault();
- 
-  setuploadLoading(true)
+  const IPFSUplod2 = async (e) => {
+    e.preventDefault();
 
-  try {
-    console.log(RSApublicKey)
-    if (file) {
-      const formData = new FormData();
-      formData.append('RSAKey', RSApublicKey);
-      formData.append('ReportFile', file);
+    setuploadLoading(true)
 
-      const response = await axios.post('http://localhost:8080/IpfsKEys/UploadIPFS', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+    try {
+      console.log(RSApublicKey)
+      if (file) {
+        const formData = new FormData();
+        formData.append('RSAKey', RSApublicKey);
+        formData.append('ReportFile', file);
 
-      setaddRecordStatus(response.data.message);
-      console.log(response)
-      setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
-    } else {
-      setaddRecordStatus("Please select a file");
+        const response = await axios.post('http://localhost:8080/IpfsKEys/UploadIPFS', formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+
+        setaddRecordStatus(response.data.message);
+        console.log(response.data.encryptionKey
+          , response.data.result.IpfsHash)
+        await addRecordonChain(response.data.encryptionKey, response.data.result.IpfsHash);
+
+      } else {
+        setaddRecordStatus("Please select a file");
+        setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
+      }
+    } catch (error) {
+      console.error(error);
+      setaddRecordStatus(error.response?.data?.message || "An error occurred");
       setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
-    }
-  } catch (error) {
-    console.error(error);
-    setaddRecordStatus(error.response?.data?.message || "An error occurred");
-    setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
 
-  } 
-};
+    }
+  };
 
 
 
@@ -567,10 +523,14 @@ export default function Participant() {
     setaddRecordStatus("Adding Record to the Chain.")
     const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
     const api = await ApiPromise.create({ provider: wsProvider });
-    await web3Enable("Manish")
+  
     const selaccnt = localStorage.getItem('Selected Account');
-    const injector = await web3FromAddress(selaccnt);
+    const keyring = new Keyring({ type: 'sr25519' });
 
+    const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selaccnt}`)
+    const tt = await decryptMnemonic(encryptedMnemonic, password)
+
+    const accMnemonic = keyring.addFromUri(tt.mnemonic);
     if (!selectedAccount) {
       console.error("No account selected. Please select an account.");
       return;
@@ -585,9 +545,10 @@ export default function Participant() {
     }
 
     try {
-      const data = await api.tx.hrmp.depositeDataPWallet(ecryKey, cid).signAndSend(selaccnt, { signer: injector.signer });;
+      const data = await api.tx.hrmp.depositeDataPWallet(ecryKey, cid).signAndSend(accMnemonic);;
       const result = data.toPrimitive()
       setaddRecordStatus("Rocord Added Sucessfully")
+
       setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -634,7 +595,7 @@ export default function Participant() {
         setEthenicity(result.ethnicity)
         setDataRecord(result.data)
         setOfferRecord(result.appliedofferId)
-        const d=await FecthingOfferDeatils(result.appliedofferId)
+        const d = await FecthingOfferDeatils(result.appliedofferId)
 
       } catch (error) {
         console.error("Error fetching profile:", error);
@@ -970,8 +931,15 @@ export default function Participant() {
                   <div style={{ marginBottom: '20px' }}>
                     <MDBFile label='Select you record' id='customFile' onChange={handleFileChange} />
                   </div>
-                  <div style={{ marginBottom: '20px' }}>
-                    <MDBInput label="Enter RSA Public " id="form1" type="text" value={RSApublicKey} onChange={userRSAPublicKey} />
+                  <div style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px', position: 'relative',marginBottom: '20px' }}>
+                    <MDBCheckbox
+                      className='custom-checkbox'
+                      id='checkNoLabel'
+                      label='Use My RSA Key'
+                      checked={checked}
+                      onChange={clickCheckBox}
+                    />
+                    {/* <MDBInput label="Enter RSA Public " id="form1" type="text" value={RSApublicKey} onChange={userRSAPublicKey} /> */}
                   </div>
 
                   {/* Logic here*/}
@@ -1058,6 +1026,36 @@ export default function Participant() {
               </MDBModal>
             </>
           ) : null}
+
+
+
+          <>
+            <MDBModal staticBackdrop tabIndex='-1' open={passwordModal} onClose={() => setpasswordModal(false)}>
+              <MDBModalDialog>
+                <MDBModalContent>
+                  <MDBModalHeader>
+                    <MDBModalTitle>Enter Password</MDBModalTitle>
+                    <MDBBtn className='btn-close' color='none' onClick={togglePasswordModal}></MDBBtn>
+                  </MDBModalHeader>
+                  <MDBModalBody>
+                    <MDBInput
+                      wrapperClass='mb-4'
+                      label='Password'
+                      size='lg'
+                      type='password'
+                      value={password}
+                      onChange={(e) => setpassword(e.target.value)}
+                    />
+                  </MDBModalBody>
+                  <MDBModalFooter>
+
+                    <MDBBtn onClick={handlePasswordSubmit}>Sing Transaction</MDBBtn>
+                  </MDBModalFooter>
+                </MDBModalContent>
+              </MDBModalDialog>
+            </MDBModal>
+          </>
+
 
 
         </section>

@@ -36,3 +36,12 @@
   .custom-radio-label input:checked+.custom-radio-button {
     background-color: rgb(23, 23, 24); /* Change this to the desired background color */
 }
+.custom-checkbox label {
+  margin-left: 5px; /* Adjust this value as needed */
+}
+.wide-dropdown-toggle {
+  width: 200px; /* Set the desired width */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}

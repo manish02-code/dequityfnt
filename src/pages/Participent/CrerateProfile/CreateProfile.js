@@ -12,8 +12,12 @@ import {
   MDBModalTitle,
   MDBModalBody,
   MDBModalFooter,
+
+
 } from 'mdb-react-ui-kit';
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom";
+import {  decrypt } from "n-krypta";
+import { Keyring } from '@polkadot/keyring';
 
 
 const CreateParticipantProfile = () => {
@@ -24,14 +28,17 @@ const CreateParticipantProfile = () => {
   const [loading, setLoading] = useState(false); // State variable for loading state
 
   const [MessagebasicModal, setMessagebasicModal] = useState(false);
-  const [MessaageToAalet, setMessaageToAalet]=useState("")
-  const [GifULR, setGifURL]=useState("")
+  const [MessaageToAalet, setMessaageToAalet] = useState("")
+  const [GifULR, setGifURL] = useState("")
 
 
   const navigate = useNavigate();
 
   const toggleOpen = () => setMessagebasicModal(!MessagebasicModal);
 
+  const [passwordModal, setpasswordModal] = useState(false);
+  const [password, setpassword] = useState('')
+  const togglePasswordModal = () => setpasswordModal(!passwordModal);
 
 
   const handleNameChange = (e) => {
@@ -51,62 +58,103 @@ const CreateParticipantProfile = () => {
   };
 
 
-  const messagemodalOKbtn =()=>{
+  const messagemodalOKbtn = () => {
     toggleOpen()
     navigate("/Perticipent")
 
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true); // Set loading state to true when form is submitted
+
+  const handlePasswordSubmit = async () => {
+    setpasswordModal(false);
+    setLoading(true);
 
     try {
-      await CreateProfile(name, age, gender, ethnicity);
+        await CreateProfile(name, age, gender, ethnicity);
     } catch (error) {
-      if (error){
-        console.log("Low Balance")
+        if (error) {
+            console.log("Low Balance", error);
 
-        setMessaageToAalet("Invalid Transaction, Low Balance.")
-        setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
+            setMessaageToAalet("Invalid Transaction, Low Balance.");
+            setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
 
-
-        toggleOpen()
-      }
-      // console.error("kjhaskjhaskjhsakhdaksdhsakjdhaksjdhskhdkjdhskjdh",error.message);
+            toggleOpen();
+        } else {
+            console.error("An error occurred:", error.message);
+        }
     } finally {
+        setLoading(false);
+    }
+};
 
-      setLoading(false); // Set loading state to false after profile creation
+
+
+
+  const handleSubmit = async (e) => {
+
+    e.preventDefault();
+    setpasswordModal(true);
+   
+  };
+
+
+
+  // Decrypt mnemonic
+  const decryptMnemonic = async (encryptedData, password) => {
+    try {
+      const decryptedData = await decrypt(encryptedData, password);
+      return decryptedData;
+    } catch (error) {
+      console.error("Error decrypting mnemonic:", error);
+      throw new Error("Failed to decrypt mnemonic");
     }
   };
 
 
 
 
-  
-
   const CreateProfile = async (name, age, gender, ethnicity) => {
-    const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
-    const api = await ApiPromise.create({ provider: wsProvider });
 
-    const selaccnt = localStorage.getItem('Selected Account');
-    const injector = await web3FromAddress(selaccnt);
-
-    const result = await api.tx.hrmp.createParticipantProfile(name, age, gender, ethnicity).signAndSend(selaccnt, { signer: injector.signer });
-
-    if (!result || !result.hash) {
-      const errorMessage = result?.error?.message || 'Transaction failed';
-
-      throw Error(errorMessage)
-    } else {
-      setMessaageToAalet("Transection Sucessfull, Profile Created.")
-      setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
-
-
+    try {
+     
+   
+      const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+      const api = await ApiPromise.create({ provider: wsProvider });
+  
+      const selaccnt = localStorage.getItem('Selected Account');
+      console.log(selaccnt)
+  
+      const keyring = new Keyring({ type: 'sr25519' });
+  
+      const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selaccnt}`)
+      const tt = await decryptMnemonic(encryptedMnemonic, password)
+  
+      const accMnemonic = keyring.addFromUri(tt.mnemonic);
+  
+  
+      const result = await api.tx.hrmp.createParticipantProfile(name, age, gender, ethnicity).signAndSend(accMnemonic);
+  
+      if (!result || !result.hash) {
+        const errorMessage = result?.error?.message || 'Transaction failed';
+        setpassword('')
+  
+        throw Error(errorMessage)
+      } else {
+        setMessaageToAalet("Transection Sucessfull, Profile Created.")
+        setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
+        setpassword('')
+  
         toggleOpen()
-      // console.log('Profile created. Transaction hash:', result.toPrimitive());
-      // Handle success here
+        // console.log('Profile created. Transaction hash:', result.toPrimitive());
+        // Handle success here
+      }
+
+    } catch (error) {
+      setpassword('')
+      console.log(error)
+      
     }
+   
   };
 
   return (
@@ -137,7 +185,7 @@ const CreateParticipantProfile = () => {
 
           {MessagebasicModal ? (
             <>
-              
+
               <MDBModal open={MessagebasicModal} onClose={() => setMessagebasicModal(false)} tabIndex='-1'>
                 <MDBModalDialog>
                   <MDBModalContent>
@@ -148,12 +196,12 @@ const CreateParticipantProfile = () => {
                     <MDBModalBody>
                       {MessaageToAalet}
                       <figure className='figure'>
-                                <img
-                                    src={GifULR}
-                                    className='figure-img img-fluid rounded shadow-3 mb-3'
-                                    alt='...'
-                                />
-                            </figure>
+                        <img
+                          src={GifULR}
+                          className='figure-img img-fluid rounded shadow-3 mb-3'
+                          alt='...'
+                        />
+                      </figure>
                     </MDBModalBody>
 
                     <MDBModalFooter>
@@ -170,6 +218,35 @@ const CreateParticipantProfile = () => {
 
         </div>
       )}
+
+
+      <>
+        <MDBModal staticBackdrop tabIndex='-1' open={passwordModal} onClose={() => setpasswordModal(false)}>
+          <MDBModalDialog>
+            <MDBModalContent>
+              <MDBModalHeader>
+                <MDBModalTitle>Enter Password</MDBModalTitle>
+                <MDBBtn className='btn-close' color='none' onClick={togglePasswordModal}></MDBBtn>
+              </MDBModalHeader>
+              <MDBModalBody>
+                <MDBInput
+                  wrapperClass='mb-4'
+                  label='Password'
+                  size='lg'
+                  type='password'
+                  value={password}
+                  onChange={(e) => setpassword(e.target.value)}
+                />
+              </MDBModalBody>
+              <MDBModalFooter>
+               
+                <MDBBtn onClick={handlePasswordSubmit}>Sing Transaction</MDBBtn>
+              </MDBModalFooter>
+            </MDBModalContent>
+          </MDBModalDialog>
+        </MDBModal>
+      </>
+
 
     </>
   );
