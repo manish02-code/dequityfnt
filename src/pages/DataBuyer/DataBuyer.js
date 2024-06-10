@@ -30,6 +30,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Accounts, web3Enable, web3FromAddress } from '@polkadot/extension-dapp';
 import { injectExtension } from '@polkadot/extension-inject';
 import { useParams, useNavigate } from "react-router-dom"
+import axios from 'axios';
 
 export default function DataBuyer() {
   const [selectedAccount, setSelectedAccount] = useState("Test");
@@ -53,6 +54,8 @@ export default function DataBuyer() {
   const [OfferName, setOfferName] = useState('')
   const [Price, setPrice] = useState()
   const [condition, setcondition] = useState('')
+
+  const[fundRequestStatus,setfundRequestStatus]=useState('Request funds')
 
 
   const [addRecordStatus, setaddRecordStatus] = useState(' ')
@@ -191,6 +194,26 @@ export default function DataBuyer() {
   };
 
 
+  const requestFunds = async (address) => {
+
+    try {
+      console.log(accountAdddress)
+      await axios.get("http://localhost:8080/para/AccountFundRequest", {
+        body: {
+          address: accountAdddress
+        }
+      }).then(res => { window.alert(res.data) 
+        setfundRequestStatus("Fund send Sucessfull")
+      })
+  
+    } catch (error) {
+      console.log(error)
+  
+    }
+  }
+
+
+
 
 
   useEffect(() => {
@@ -288,6 +311,15 @@ export default function DataBuyer() {
                     </MDBBtn>
                   </div>
                 </div>
+
+                <div style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                      <div>
+                        <MDBBtn size="lg" rounded className='bg-success' onClick={requestFunds} >
+                        {fundRequestStatus}
+                        </MDBBtn>
+                      </div>
+
+                    </div>
 
               </MDBCardBody>
             </MDBCard>

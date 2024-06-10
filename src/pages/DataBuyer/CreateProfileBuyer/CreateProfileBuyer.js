@@ -90,6 +90,7 @@ const CreateProfileBuyer = () => {
     const api = await ApiPromise.create({ provider: wsProvider });
 
     const selaccnt = localStorage.getItem('Selected Account');
+    console.log(selaccnt)
     const injector = await web3FromAddress(selaccnt);
 
     const result = await api.tx.hrmp.createOfferCreatorProfile(name, age, gender, ethnicity).signAndSend(selaccnt, { signer: injector.signer });

@@ -38,15 +38,15 @@ import forge from 'node-forge';
 import CryptoJS from 'crypto-js';
 import axios from 'axios';
 import { Keyring } from '@polkadot/keyring';
-import {  decrypt } from "n-krypta";
+import { decrypt } from "n-krypta";
 
 
 export default function Participant() {
   const [api, setapi] = useState()
   const [accounts, setAccounts] = useState([]);
-  const [selectedAccount, setSelectedAccount] = useState("Test");
 
   const acc = localStorage.getItem('Selected Account')
+  const [selectedAccount, setSelectedAccount] = useState(acc);
 
 
   ////Profile info State
@@ -78,7 +78,10 @@ export default function Participant() {
 
   const [passwordModal, setpasswordModal] = useState(false);
   const [password, setpassword] = useState('')
+  const [RSAPrivetKey, setRSAPrivetKey] = useState(' ')
   const togglePasswordModal = () => setpasswordModal(!passwordModal);
+
+  const [fundRequestStatus, setfundRequestStatus] = useState('Request funds')
 
 
   const [checked, setChecked] = useState(false);
@@ -141,38 +144,44 @@ export default function Participant() {
 
 
 
-   // Decrypt mnemonic
- const decryptMnemonic = async (encryptedData, password) => {
-  try {
-    const decryptedData = await decrypt(encryptedData, password);
-    return decryptedData;
-  } catch (error) {
-    console.error("Error decrypting mnemonic:", error);
-    throw new Error("Failed to decrypt mnemonic");
-  }
-};
+  // Decrypt mnemonic
+  const decryptMnemonic = async (encryptedData, password) => {
+    try {
+
+      const decryptedData = await decrypt(encryptedData, password);
+      return decryptedData;
+    } catch (error) {
+      console.error("Error decrypting mnemonic:", error);
+      throw new Error("Failed to decrypt mnemonic");
+    }
+  };
+
+
 
 
 
 
 
   //This Function use Take RSA key of User
-  const handlePasswordSubmit = async(e) => {
+  const handlePasswordSubmit = async (e) => {
     // setencryptedFile(e.target.value);
     const keyring = new Keyring({ type: 'sr25519' });
     const selaccnt = localStorage.getItem('Selected Account');
     console.log(selaccnt)
-  
-      const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selaccnt}`)
-      const tt = await decryptMnemonic(encryptedMnemonic, password)
-  
+
+    const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selaccnt}`)
+    const tt = await decryptMnemonic(encryptedMnemonic, password)
+
+
     setRSApublicKey(tt.rsaPublicKey)
+    setRSAPrivetKey(tt.rsaPrivateKey)
     togglePasswordModal()
+
     setChecked(true)
   };
 
 
-  const clickCheckBox =async()=>{
+  const clickCheckBox = async () => {
     togglePasswordModal()
 
   }
@@ -300,8 +309,8 @@ export default function Participant() {
 
 
 
- 
- 
+
+
   const IPFSUplod = async (ecryKey) => {
     setaddRecordStatus("Uploading Your Data");
 
@@ -486,7 +495,7 @@ export default function Participant() {
     setuploadLoading(true)
 
     try {
-      console.log(RSApublicKey)
+
       if (file) {
         const formData = new FormData();
         formData.append('RSAKey', RSApublicKey);
@@ -499,8 +508,7 @@ export default function Participant() {
         });
 
         setaddRecordStatus(response.data.message);
-        console.log(response.data.encryptionKey
-          , response.data.result.IpfsHash)
+
         await addRecordonChain(response.data.encryptionKey, response.data.result.IpfsHash);
 
       } else {
@@ -523,13 +531,15 @@ export default function Participant() {
     setaddRecordStatus("Adding Record to the Chain.")
     const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
     const api = await ApiPromise.create({ provider: wsProvider });
-  
-    const selaccnt = localStorage.getItem('Selected Account');
+
+    // const selaccnt = localStorage.getItem('Selected Account');
+
     const keyring = new Keyring({ type: 'sr25519' });
+    const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selectedAccount}`)
+ 
 
-    const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selaccnt}`)
     const tt = await decryptMnemonic(encryptedMnemonic, password)
-
+  
     const accMnemonic = keyring.addFromUri(tt.mnemonic);
     if (!selectedAccount) {
       console.error("No account selected. Please select an account.");
@@ -554,8 +564,69 @@ export default function Participant() {
       console.error("Error fetching profile:", error);
     } finally {
       api.disconnect(); // Disconnect from the Polkadot node after fetching data
+      
+    setpassword('')
     }
 
+  }
+  const DecrytpandDownload = async (cid1, encKey) => {
+    try {
+      setpasswordModal(true);
+      console.log(cid1, encKey);
+  
+      const response = await axios.post(`http://localhost:8080/IpfsKEys/Decryptfils`, {
+        cid: cid1,
+        key: encKey,
+        RSaPVtKey: RSAPrivetKey
+      });
+  
+      console.log(response);
+  
+      const { file, filename, mimeType } = response.data;
+      console.log(response.data)
+  
+      // Convert base64 string to binary data
+      const binaryString = atob(file);
+      const binaryLength = binaryString.length;
+      const bytes = new Uint8Array(binaryLength);
+      for (let i = 0; i < binaryLength; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+  
+      const blob = new Blob([bytes], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+  
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+  
+      URL.revokeObjectURL(url);
+  
+    } catch (error) {
+      console.error(error);
+    }
+  };
+  
+  const requestFunds = async (address) => {
+
+    try {
+      console.log(accountAdddress)
+      await axios.post("http://localhost:8080/para/AccountFundRequest", {
+        body: {
+          address: accountAdddress
+        }
+      }).then(res => {
+        window.alert(res.data)
+        setfundRequestStatus("Fund send Sucessfull")
+      })
+
+    } catch (error) {
+      console.log(error)
+
+    }
   }
 
 
@@ -573,6 +644,16 @@ export default function Participant() {
   //   window.URL.revokeObjectURL(url);
   //   document.body.removeChild(a);
   // };
+
+
+
+
+
+
+
+
+
+
 
 
   useEffect(() => {
@@ -664,7 +745,19 @@ export default function Participant() {
                           Receive
                         </MDBBtn>
                       </div>
+
+
+
                     </div>
+                    <div style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
+                      <div>
+                        <MDBBtn size="lg" rounded className='bg-success' onClick={requestFunds} >
+                          {fundRequestStatus}
+                        </MDBBtn>
+                      </div>
+
+                    </div>
+
 
 
 
@@ -783,7 +876,7 @@ export default function Participant() {
                                       <td>{item.cid.slice(0, 4)}...{item.cid.slice(-10)}</td> {/* Display first 4 characters and last 4 characters of CID */}
                                       <td>{item.key.slice(0, 4)}...{item.key.slice(-10)}</td> {/* Display first 4 characters and last 4 characters of Key */}
                                       <td>
-                                        <MDBBtn color='link' size='sm'>
+                                        <MDBBtn color='link' size='sm' onClick={() => DecrytpandDownload(item.cid, item.key)}>
                                           <figure className='figure' style={{ width: '30px', height: '30px', margin: '0' }}>
                                             <img
                                               src="https://png.pngtree.com/png-vector/20190621/ourmid/pngtree-download-icon-graphic-design-template-vector-illustration-png-image_1499700.jpg"
@@ -931,7 +1024,7 @@ export default function Participant() {
                   <div style={{ marginBottom: '20px' }}>
                     <MDBFile label='Select you record' id='customFile' onChange={handleFileChange} />
                   </div>
-                  <div style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px', position: 'relative',marginBottom: '20px' }}>
+                  <div style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px', position: 'relative', marginBottom: '20px' }}>
                     <MDBCheckbox
                       className='custom-checkbox'
                       id='checkNoLabel'

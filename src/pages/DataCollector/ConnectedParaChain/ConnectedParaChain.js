@@ -17,13 +17,15 @@ import {
     MDBModalTitle,
     MDBModalBody,
     MDBModalFooter,
-    MDBCardImage
+    MDBCardImage,
+    MDBCheckbox,
+    MDBTextArea
 } from 'mdb-react-ui-kit';
 import axios from 'axios';
 import { useState, useEffect } from "react";
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { encodeAddress } from '@polkadot/util-crypto';
+import { encodeAddress, mnemonicGenerate } from '@polkadot/util-crypto';
 import { Keyring } from '@polkadot/keyring';
 
 
@@ -32,26 +34,32 @@ import { Keyring } from '@polkadot/keyring';
 export default function ConnectedCollector() {
     const [copyStatusImage, setcopyStatusImage] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
     const [copyStatusImage2, setcopyStatusImage2] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
-   
+    const [copyStatusImage3, setcopyStatusImage3] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+    const [copyStatusImage4, setcopyStatusImage4] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+    const [copyStatusImage5, setcopyStatusImage5] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
     const [GifULR, setGifURL] = useState("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
     const [addRecordStatus, setaddRecordStatus] = useState(' ')
     const [uploadLoading, setuploadLoading] = useState(false)
 
     const [ChainID, setChainID] = useState()
     const [parachianConnectionStatus, setparachianConnectionStatus] = useState(false)
+    const [parachianRegisterStatus, setparachianRegisterStatus] = useState(false)
     const [sovereignAccount, setsovereignAccount] = useState('')
     const [sudoAccount, setSudoAccout] = useState('')
 
     const [accountCreatModal3, setaccountCreatModal3] = useState(false);
     const [cntNodeIp, setcntNodeIp] = useState("")
-    const accountCreatModalToggle3 = () => setaccountCreatModal3(!accountCreatModal3);
+    const accountCreatModalToggle3 = () => {
 
+        setaccountCreatModal3(!accountCreatModal3);
+        
+    }
     ///Creat Participant Profile
     const [Participantname, setParticipantname] = useState("")
     const [Participantage, setParticipantage] = useState(null)
     const [Participantgender, setParticipantgender] = useState("")
     const [Participantethnicity, setParticipantethnicity] = useState("")
-    const [ParticipantaccountID, setParticipantaccountID] = useState("")
+    const [ParticipantaccountID, setParticipantaccountID] = useState("dfsdfsdf")
     const [perticipentModal, setperticipentModal] = useState(false);
 
     const CreateParticipent = () => {
@@ -68,9 +76,14 @@ export default function ConnectedCollector() {
         setuploadLoading(!uploadLoading)
         setGifURL("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
         setaddRecordStatus(" ")
+        setFile(null)
+        setdepositedAccount(' ')
+        setRSApublicKey(' ')
+        sethasCID('')
+        setPerticipentEncyKey('')
+        setScrollableModal(false)
 
     };
-
 
     const createsetParticipant = async () => {
         addrecordmodal()
@@ -82,15 +95,97 @@ export default function ConnectedCollector() {
     }
 
 
-    const depositeData= async()=>{
+
+
+
+    /////////////////////////////////////////////////////
+    const [file, setFile] = useState(null);
+    const [RSApublicKey, setRSApublicKey] = useState('')
+    const [depositedAccount, setdepositedAccount] = useState('')
+    const [PerticipentEncyKey, setPerticipentEncyKey] = useState('')
+    const [hasCID, sethasCID] = useState('')
+    const [scrollableModal, setScrollableModal] = useState(false);
+
+    const depositeData = async (hasCID,PerticipentEncyKey) => {
+
+        console.log("CID: ",hasCID,"ENkey: ",PerticipentEncyKey)
+        
+
         addrecordmodal()
         setaddRecordStatus("Depositing Data..")
-        const encodedCallData = await getDeositdataEncodedCallData("abc","123abc","5EvZp68brb9ta8DH4xbnHemSQijCCYTWN8YfbbT4wKXkPtrH")
+
+
+        console.log(PerticipentEncyKey, hasCID, depositedAccount)
+        const encodedCallData = await getDeositdataEncodedCallData(PerticipentEncyKey, hasCID, depositedAccount)
         console.log(encodedCallData)
 
         const encodedCallDataHex = await createXcmCall(encodedCallData);
 
     }
+
+
+    ///This is use to take Raw file form User
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        setFile(file);
+    };
+
+
+    const IPFSUplod2 = async (e) => {
+        e.preventDefault();
+
+        setScrollableModal(false)
+        setuploadLoading(true)
+
+        try {
+            console.log(RSApublicKey)
+            if (file) {
+                const formData = new FormData();
+                formData.append('RSAKey', RSApublicKey);
+                formData.append('ReportFile', file);
+
+           await axios.post('http://localhost:8080/IpfsKEys/UploadIPFS', formData, {
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
+                }).then(async response=>{
+                    setaddRecordStatus(response.data.message);
+  
+    
+    
+    
+                   
+                    const encKey=response.data.encryptionKey;
+                    const CId=response.data.result.IpfsHash;
+
+                    setPerticipentEncyKey(encKey)
+                    sethasCID(CId)
+
+
+
+                    await depositeData(CId,encKey)
+                })
+
+               
+
+
+            
+
+
+            } else {
+                setaddRecordStatus("Please select a file");
+                setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
+            }
+        } catch (error) {
+            console.error(error);
+            setaddRecordStatus(error.response?.data?.message || "An error occurred");
+            setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
+
+        }
+    };
+
+
+
 
 
     const conn = async () => {
@@ -102,6 +197,37 @@ export default function ConnectedCollector() {
             console.log("Connected to you node")
 
             setparachianConnectionStatus(true)
+
+
+            const paraid = await api.query.parachainInfo.parachainId()
+            setChainID(paraid.toPrimitive())
+
+            checkParachainStatus(paraid.toPrimitive())
+
+
+
+
+            const sudoacct = await api.query.sudo.key()
+            setSudoAccout(sudoacct.toPrimitive())
+
+            const params = {
+                paraid: paraid.toPrimitive()
+            };
+
+            console.log("FEcthing sovereign Accounts")
+            axios.post('http://localhost:8080/para/getSovereignAccount', params)
+                .then(response => {
+                    setsovereignAccount(response.data);
+
+                })
+                .catch(error => {
+                    console.error(error);
+                });
+
+
+            const data = await api.query.system.account(sovereignAccount);
+            console.log(data.data.toString())
+
 
             accountCreatModalToggle3()
 
@@ -118,37 +244,39 @@ export default function ConnectedCollector() {
     async function getEncodedCallData(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID) {
         const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
         let api = await ApiPromise.create({ provider: wsProvider });
-    
-    
+
+
         // Create the extrinsic call
-        const call =await api.tx.hrmp.createParticipantProfileXcm(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID);
-    
+        const call = await api.tx.hrmp.createParticipantProfileXcm(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID);
+
         // Get the encoded call data
         let encodedCallData = call.toHex();
-        
-        console.log("Encoded Call Data (not modified): ", encodedCallData);
-    
-    
 
-    
+        console.log("Encoded Call Data (not modified): ", encodedCallData);
+
         return removeBefore3c(encodedCallData);
     }
 
-    
-    async function getDeositdataEncodedCallData(ParticipantEnKey, ParticipantIpfsCid,  ParticipantaccountID) {
+
+
+
+
+
+
+    async function getDeositdataEncodedCallData(ParticipantEnKey, ParticipantIpfsCid, ParticipantaccountID) {
         const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
         let api = await ApiPromise.create({ provider: wsProvider });
-    
-    
+
+
         // Create the extrinsic call
-        const call =await api.tx.hrmp.depositeDataPWalletXcm(ParticipantEnKey, ParticipantIpfsCid,ParticipantaccountID);
-    
+        const call = await api.tx.hrmp.depositeDataPWalletXcm(ParticipantEnKey, ParticipantIpfsCid, ParticipantaccountID);
+
         // Get the encoded call data
         let encodedCallData = call.toHex();
-        
+
         console.log("Encoded Call Data (not modified): ", encodedCallData);
-    
-    
+
+
         return removeBefore3c(encodedCallData);
     }
 
@@ -161,7 +289,7 @@ export default function ConnectedCollector() {
         const encodedCallDataStr = await encodedCallData;
 
         const index = encodedCallDataStr.indexOf('3c');
-        if (index ) {
+        if (index) {
             return '0x' + encodedCallDataStr.substring(index);
         } else {
             throw new Error('"3c" not found in the encoded call data');
@@ -170,7 +298,7 @@ export default function ConnectedCollector() {
 
 
 
- 
+
 
 
 
@@ -180,17 +308,17 @@ export default function ConnectedCollector() {
         try {
             const endcalldata = await encodedCallData;
             console.log('Encoded Call Data:', endcalldata);
-    
+
             const wsProvider = new WsProvider(`ws://${cntNodeIp}:8844`);
             const api = await ApiPromise.create({ provider: wsProvider });
-    
+
             const dest = {
                 "V2": {
                     "parents": 1,
                     "interior": "Here"
                 }
             };
-    
+
             const messages = {
                 "V2": [
                     {
@@ -230,7 +358,7 @@ export default function ConnectedCollector() {
                             "requireWeightAtMost": 40000000000,
                             "call": {
                                 "encoded": endcalldata
-                            } 
+                            }
                         }
                     },
                     { "RefundSurplus": {} },
@@ -244,7 +372,7 @@ export default function ConnectedCollector() {
                                 "parents": 0,
                                 "interior": {
                                     "X1": {
-                                        "Parachain": 2000
+                                        "Parachain": ChainID
                                     }
                                 }
                             }
@@ -252,13 +380,13 @@ export default function ConnectedCollector() {
                     }
                 ]
             };
-    
+
             const keyring = new Keyring({ type: 'sr25519' });
             const alice = keyring.addFromUri(process.env.ALICE_URI || '//Alice');
-    
+
             const xcmCall = api.tx.polkadotXcm.send(dest, messages);
             setaddRecordStatus('Sending Transection');
-    
+
             const unsub = await api.tx.sudo.sudo(xcmCall).signAndSend(alice, { nonce: -1 }, ({ status, events, dispatchError }) => {
                 if (status.isInBlock) {
                     console.log(`Transaction included at blockHash ${status.asInBlock}`);
@@ -271,10 +399,10 @@ export default function ConnectedCollector() {
                 } else {
                     console.log(`Transaction status: ${status.type}`);
                     setaddRecordStatus(`Transaction status: ${status.type}`)
-                   
-                } 
 
-    
+                }
+
+
                 if (dispatchError) {
                     if (dispatchError.isModule) {
                         const decoded = api.registry.findMetaError(dispatchError.asModule);
@@ -288,19 +416,19 @@ export default function ConnectedCollector() {
                         setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
                     }
                 }
-    
+
                 events.forEach(({ event: { method, section }, phase, event }) => {
                     console.log(`\t${phase.toString()}: ${section}.${method}:: ${event.data.toString()}`);
                 });
             });
-    
+
         } catch (error) {
             console.error('Error creating XCM call:', error);
             setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif")
         }
     }
-    
-    
+
+
 
     async function sendXcmCall(encodedCallDataHex) {
         try {
@@ -327,14 +455,132 @@ export default function ConnectedCollector() {
 
 
 
+    /////////////////////////////////////////////////////////////////////////////////////////
+    //               New Account Logic
+
+    const [modalStep, setModalStep] = useState(1);
+    const [mnemonic, setMnemonic] = useState('');
+    const [userMnemonic, setUserMnemonic] = useState('');
+    const [alertMessage, setAlertMessage] = useState("");
+    const [accountCreatModal, setaccountCreatModal] = useState(false);
+    const [RSApublic, setRSApublic] = useState(``);
+    const [RSAprivet, setRSAprivet] = useState(``);
+    const [checked, setChecked] = useState(false);
+
+
+
+    const accountCreatModalToggle = () => {
+
+        setAlertMessage("Account created and saved successfully.");
+        setaccountCreatModal(false);
+        setModalStep(1)
+        setMnemonic('')
+        setUserMnemonic('')
+        setRSApublic('')
+        setRSAprivet('')
+        setChecked(false)
+        setAlertMessage('')
+
+        setcopyStatusImage("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+        setcopyStatusImage2("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+        setcopyStatusImage3("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+        setcopyStatusImage4("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+        setcopyStatusImage5("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+
+
+        setaccountCreatModal(!accountCreatModal)
+    };
+
+
+    const RsaNext = async () => {
+        setModalStep(3);
+        setAlertMessage('')
+        setaccountCreatModal(false)
+
+
+    }
+
+
+
+
+    const generateMnemonic = () => {
+        const mnemonic = mnemonicGenerate();
+        setMnemonic(mnemonic);
+        const keyring = new Keyring({ type: 'sr25519' });
+        const pair = keyring.addFromUri(mnemonic);
+        setParticipantaccountID(pair.address)
+        setModalStep(2);
+        setAlertMessage('')
+    };
+
+
+
+
+    const confirmMnemonic = async () => {
+        if (userMnemonic !== mnemonic) {
+            setAlertMessage("Mnemonics do not match. Please try again.");
+        } else {
+            try {
+                const res = await axios.get('http://localhost:8080/IpfsKEys/CreateRSAkeys');
+                setRSAprivet(res.data.privateKey);
+                setRSApublic(res.data.publicKey);
+                setModalStep(3);
+                setAlertMessage('')
+            } catch (error) {
+                console.error('Error fetching data:', error);
+            }
+
+        }
+    };
+
+
+    const checkParachainStatus = async (ChainID) => {
+        try {
+          // Connect to the relay chain node
+          const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+          const api = await ApiPromise.create({ provider: wsProvider });
+      
+          // Query the list of registered parachains
+          const parachains = await api.query.paras.parachains();
+          console.log('Registered Parachains:', parachains.toPrimitive())
+          const parachain=parachains.toPrimitive()
+  
+          const isParachainRegistered = parachain.includes(ChainID);
+          
+       
+    
+          console.log(`Parachain  registered: `,isParachainRegistered);
+          setparachianRegisterStatus(isParachainRegistered)
+      
+          if (isParachainRegistered) {             
+            console.log(`Parachain ${ChainID} is registered.`);
+          } else {
+            console.error(`Parachain ${ChainID} is not registered.`);
+          }
+        } catch (error) {
+          console.error(`Error checking parachain status: ${error.message}`);
+        }
+      };
+
+
+
 
 
     useEffect(() => {
-        if (parachianConnectionStatus == false) {
-            accountCreatModalToggle3()
-        }
 
-    }, []);
+        const fetchData = async () => {
+            if (parachianConnectionStatus === false) {
+                await accountCreatModalToggle3();
+            }
+        };
+
+        fetchData();
+
+       
+        return () => {
+            // Cleanup code here if necessary
+        };
+    }, [parachianConnectionStatus]); // Add any dependencies if needed
 
 
 
@@ -398,6 +644,38 @@ export default function ConnectedCollector() {
 
 
 
+                                    {parachianRegisterStatus ? (<div
+                                        style={{
+                                            backgroundColor: `#B9EDCB`,
+                                            borderRadius: '10px',
+                                            padding: '10px',
+                                            marginTop: '10px'
+                                        }}
+                                    >
+                                        <p className="text-muted mb-1">
+                                            Register  
+                                        </p>
+                                        <p className="text-muted mb-1"></p>
+                                    </div>) : (<div
+                                        style={{
+                                            backgroundColor: `#FB5558`,
+                                            borderRadius: '10px',
+                                            padding: '10px',
+                                            marginTop: '10px'
+                                        }}
+                                    >
+                                        <p className="text-muted mb-1">
+                                            Not Register,Please wait 5-10 minutes for registration
+                                        </p>
+                                        <p className="text-muted mb-1"></p>
+                                    </div>
+
+                                    )}
+
+
+
+
+
                                     <div
                                         style={{
                                             backgroundColor: '#eee',
@@ -431,7 +709,7 @@ export default function ConnectedCollector() {
                                                 marginTop: '10px'
                                             }}
                                             onClick={() => {
-                                                navigator.clipboard.writeText("ABCdfsdfsd");
+                                                navigator.clipboard.writeText(sovereignAccount);
                                                 setcopyStatusImage("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU")
                                             }}
                                         >
@@ -478,7 +756,7 @@ export default function ConnectedCollector() {
                                                 marginTop: '10px'
                                             }}
                                             onClick={() => {
-                                                navigator.clipboard.writeText("ABCdfsdfsd");
+                                                navigator.clipboard.writeText(sudoAccount);
                                                 setcopyStatusImage2("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU")
                                             }}
                                         >
@@ -515,12 +793,12 @@ export default function ConnectedCollector() {
                                         }}
                                     >
                                         <div>
-                                            <MDBBtn size="lg" rounded className='bg-warning' onClick={CreateParticipent}>
+                                            <MDBBtn size="lg" rounded disabled={!parachianRegisterStatus} className='bg-warning' onClick={CreateParticipent}>
                                                 Create Participant
                                             </MDBBtn>
                                         </div>
                                         <div>
-                                            <MDBBtn size="lg" rounded className='bg-success' onClick={depositeData}>
+                                            <MDBBtn size="lg" rounded  disabled={!parachianRegisterStatus} className='bg-success' onClick={() => setScrollableModal(true)}>
                                                 Deposite Data
                                             </MDBBtn>
                                         </div>
@@ -600,18 +878,37 @@ export default function ConnectedCollector() {
                                 value={Participantethnicity}
                                 onChange={(e) => setParticipantethnicity(e.target.value)}
                             />
-                            <MDBInput
-                                wrapperClass='mb-4'
-                                label='Enter AccountID Of Participant'
-                                size='lg'
-                                type='text'
-                                value={ParticipantaccountID}
-                                onChange={(e) => setParticipantaccountID(e.target.value)}
-                            />
+
+                            {ParticipantaccountID == " " ? (
+
+                                <div className="mb-4">
+                                    <MDBBtn
+                                        color='dark'
+                                        wrapperClass='mb-4'
+                                        onClick={accountCreatModalToggle}
+
+                                    >
+                                        Create Accouont ID
+                                    </MDBBtn>
+                                </div>
+
+                            ) : (
+
+                                <MDBInput
+                                    label={ParticipantaccountID}
+                                    placeholder="Readonly input here..."
+                                    id="formControlReadOnly"
+                                    type="text"
+                                    readonly
+                                    wrapperClass='mb-4'
+                                />
+
+
+                            )}
 
 
 
-                            <MDBBtn onClick={createsetParticipant}>Create Accoount</MDBBtn>
+                            <MDBBtn disabled={ParticipantaccountID == " "} onClick={createsetParticipant}>Create Account</MDBBtn>
                         </MDBModalBody>
                     </MDBModalContent>
                 </MDBModalDialog>
@@ -619,43 +916,267 @@ export default function ConnectedCollector() {
 
 
 
-            
-          {uploadLoading ? (
-            <>
 
-              <MDBModal staticBackdrop open={uploadLoading}  tabIndex='-1'>
-                <MDBModalDialog >
-                  <MDBModalContent>
-                    <MDBModalHeader>
-                      <MDBModalTitle></MDBModalTitle>
-                      <MDBBtn className='btn-close' color='none' onClick={addrecordmodal}></MDBBtn>
-                    </MDBModalHeader>
-                    <MDBModalBody>
-                      <div>
-                        <h3 style={{ fontSize: '1.5rem' }}>{addRecordStatus}</h3>
-                        <figure className='figure'>
-                          <img
-                            src={GifULR}
-                            className='figure-img img-fluid rounded shadow-3 mb-3'
-                            alt='...'
-                            style={{ maxWidth: '100%', height: 'auto' }}
-                          />
-                        </figure>
-                      </div>
+            {uploadLoading ? (
+                <>
 
-                    </MDBModalBody>
+                    <MDBModal staticBackdrop open={uploadLoading} tabIndex='-1'>
+                        <MDBModalDialog >
+                            <MDBModalContent>
+                                <MDBModalHeader>
+                                    <MDBModalTitle></MDBModalTitle>
+                                    <MDBBtn className='btn-close' color='none' onClick={addrecordmodal}></MDBBtn>
+                                </MDBModalHeader>
+                                <MDBModalBody>
+                                    <div>
+                                        <h3 style={{ fontSize: '1.5rem' }}>{addRecordStatus}</h3>
+                                        <figure className='figure'>
+                                            <img
+                                                src={GifULR}
+                                                className='figure-img img-fluid rounded shadow-3 mb-3'
+                                                alt='...'
+                                                style={{ maxWidth: '100%', height: 'auto' }}
+                                            />
+                                        </figure>
+                                    </div>
 
-                    <MDBModalFooter>
-                      <MDBBtn color='danger' onClick={addrecordmodal} >
-                        Cancel
-                      </MDBBtn>
-                    </MDBModalFooter>
-                  </MDBModalContent>
+                                </MDBModalBody>
+
+                                <MDBModalFooter>
+                                    <MDBBtn color='danger' onClick={addrecordmodal} >
+                                        Cancel
+                                    </MDBBtn>
+                                </MDBModalFooter>
+                            </MDBModalContent>
+                        </MDBModalDialog>
+                    </MDBModal>
+                </>
+            ) : null}
+
+
+
+
+
+            <MDBModal staticBackdrop tabIndex='-1' open={accountCreatModal} onClose={() => setaccountCreatModal(false)}>
+                <MDBModalDialog centered>
+                    <MDBModalContent>
+                        <MDBModalHeader>
+                            <MDBModalTitle>Account Setup</MDBModalTitle>
+                            <MDBBtn className='btn-close' color='none' onClick={accountCreatModalToggle}></MDBBtn>
+                        </MDBModalHeader>
+                        <MDBModalBody>
+                            {modalStep === 1 && (
+                                <div>
+                                    <p>Click the button below to generate a new mnemonic phrase.</p>
+                                    <MDBBtn onClick={generateMnemonic}>Generate Mnemonic</MDBBtn>
+                                </div>
+                            )}
+
+                            {modalStep === 2 && (
+                                <div>
+                                    <p>Your generated mnemonic is:</p>
+
+                                    <p><strong>{mnemonic}</strong></p>
+                                    <div style={{ position: 'relative' }}>
+                                        <button
+                                            className="btn btn-secondary btn-sm"
+                                            style={{
+                                                position: 'absolute',
+                                                bottom: '5px',
+                                                right: '5px',
+                                                marginTop: '10px'
+                                            }}
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(mnemonic);
+                                                setcopyStatusImage3("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU");
+                                            }}
+                                            >
+                                            <figure
+                                                className='figure'
+                                                style={{
+                                                    width: '30px',
+                                                    height: '30px',
+                                                    margin: '0'
+                                                }}
+                                            >
+                                                <img
+                                                    src={copyStatusImage3}
+                                                    className='figure-img img-fluid rounded shadow-3 mb-3'
+                                                    alt='...'
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'contain'
+                                                    }}
+                                                />
+                                            </figure>
+                                        </button>
+
+                                    </div>
+                                    <MDBInput
+                                        wrapperClass='mb-4'
+                                        label='Confirm Mnemonic'
+                                        size='lg'
+                                        type='text'
+                                        value={userMnemonic}
+                                        onChange={(e) => setUserMnemonic(e.target.value)}
+                                    />
+
+                                    <MDBBtn onClick={confirmMnemonic}>Confirm Mnemonic</MDBBtn>
+                                </div>
+                            )}
+
+
+                            {modalStep === 3 && (
+                                <div>
+                                    <MDBModalDialog scrollable>
+                                        <MDBModalContent md='8'>
+                                            <MDBModalHeader>
+                                                <MDBModalTitle>RSA Keys</MDBModalTitle>
+
+                                            </MDBModalHeader>
+                                            <MDBModalBody >
+                                                <p style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px' }}>
+                                                    {RSApublic}
+                                                    <div style={{ position: 'relative' }}>
+                                                        <button
+                                                            className="btn btn-secondary btn-sm"
+                                                            style={{
+                                                                position: 'absolute',
+                                                                bottom: '5px',
+                                                                right: '5px',
+                                                                marginTop: '10px'
+                                                            }}
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(RSApublic);
+                                                                setcopyStatusImage5("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU");
+                                                            }}
+                                                        >
+                                                            <figure
+                                                                className='figure'
+                                                                style={{
+                                                                    width: '30px',
+                                                                    height: '30px',
+                                                                    margin: '0'
+                                                                }}
+                                                            >
+                                                                <img
+                                                                    src={copyStatusImage5}
+                                                                    className='figure-img img-fluid rounded shadow-3 mb-3'
+                                                                    alt='...'
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        objectFit: 'contain'
+                                                                    }}
+                                                                />
+                                                            </figure>
+                                                        </button>
+
+                                                    </div>
+
+                                                </p>
+                                                <p style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px' }}>
+                                                    {RSAprivet}
+                                                    <div style={{ position: 'relative' }}>
+                                                        <button
+                                                            className="btn btn-secondary btn-sm"
+                                                            style={{
+                                                                position: 'absolute',
+                                                                bottom: '5px',
+                                                                right: '5px',
+                                                                marginTop: '10px'
+                                                            }}
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText( RSAprivet);
+                                                                setcopyStatusImage4("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU");
+                                                            }}
+                                                        >
+                                                            <figure
+                                                                className='figure'
+                                                                style={{
+                                                                    width: '30px',
+                                                                    height: '30px',
+                                                                    margin: '0'
+                                                                }}
+                                                            >
+                                                                <img
+                                                                    src={copyStatusImage4}
+                                                                    className='figure-img img-fluid rounded shadow-3 mb-3'
+                                                                    alt='...'
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        objectFit: 'contain'
+                                                                    }}
+                                                                />
+                                                            </figure>
+                                                        </button>
+
+                                                    </div>
+                                                </p>
+
+                                                <MDBCheckbox
+                                                    className='custom-checkbox'
+                                                    id='checkNoLabel'
+                                                    label='Save this Key'
+                                                    checked={checked}
+                                                    onChange={() => setChecked(!checked)}
+                                                />
+                                            </MDBModalBody>
+                                            <MDBModalFooter>
+                                                {/* <MDBBtn color='secondary' onClick={toggleModal}>Close</MDBBtn> */}
+                                                <MDBBtn disabled={!checked} onClick={RsaNext}>Save AccoountID</MDBBtn>
+                                            </MDBModalFooter>
+                                        </MDBModalContent>
+                                    </MDBModalDialog>
+
+                                </div>
+                            )}
+
+
+                            {alertMessage == "Account created and saved successfully." ? <p style={{ color: "green" }}>{alertMessage}</p> :
+                                <p style={{ color: "red" }}>{alertMessage}</p>}
+
+                        </MDBModalBody>
+                    </MDBModalContent>
                 </MDBModalDialog>
-              </MDBModal>
-            </>
-          ) : null}
+            </MDBModal>
 
+
+
+
+            <MDBModal staticBackdrop open={scrollableModal} onClose={() => setScrollableModal(false)} tabIndex='-1'>
+                <MDBModalDialog scrollable centered >
+                    <MDBModalContent>
+                        <MDBModalHeader>
+                            <MDBModalTitle>Add Record</MDBModalTitle>
+                            <MDBBtn
+                                className='btn-close'
+                                color='none'
+                                onClick={() => setScrollableModal(false)}
+                            ></MDBBtn>
+                        </MDBModalHeader>
+                        <MDBModalBody>
+                            <div style={{ marginBottom: '20px' }}>
+                                <MDBFile label='Select you record' id='customFile' onChange={handleFileChange} />
+                            </div>
+                            <MDBInput style={{ marginBottom: '20px' }} label="Account ID" value={depositedAccount} onChange={(e) => setdepositedAccount(e.target.value)} id="form1" type="text" />
+
+                            <MDBTextArea style={{ marginBottom: '20px' }} label="RSA Public Key" value={RSApublicKey} onChange={(e) => setRSApublicKey(e.target.value)} id="textAreaExample" />
+
+
+
+                        </MDBModalBody>
+                        <MDBModalFooter>
+                            <MDBBtn color='secondary' onClick={() => setScrollableModal(!setScrollableModal)}>
+                                Cancel
+                            </MDBBtn>
+                            <MDBBtn onClick={IPFSUplod2}>Add Record</MDBBtn>
+                        </MDBModalFooter>
+                    </MDBModalContent>
+                </MDBModalDialog>
+            </MDBModal>
 
 
 

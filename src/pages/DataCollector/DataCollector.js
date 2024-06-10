@@ -48,9 +48,10 @@ export default function DataCollector() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [receiverAddress, setReceiverAddress] = useState('');
-  const [amount, setAmount] = useState(''); 
+  const [amount, setAmount] = useState('');
+ 
 
-  const[cntNodeIp,setcntNodeIp]=useState("")
+  const [cntNodeIp, setcntNodeIp] = useState("")
 
   const accountCreatModalToggle = () => setaccountCreatModal(!accountCreatModal);
   const accountCreatModalToggle3 = () => setaccountCreatModal3(!accountCreatModal3);
@@ -58,11 +59,14 @@ export default function DataCollector() {
   const sendModalToggle = () => setSendModal(!sendModal);
 
   const addrecordmodal = () => {
-    setuploadLoading(!uploadLoading)
+
     setGifURL("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
     setaddRecordStatus(" ")
+    setuploadLoading(!uploadLoading)
+    setAlertMessage('')
+    setStatusMessage('')
 
-};
+  };
 
 
 
@@ -74,7 +78,7 @@ export default function DataCollector() {
     const ws = new WebSocket('ws://localhost:8081');
 
     ws.onopen = () => {
-   
+
     };
 
     ws.onmessage = (event) => {
@@ -131,19 +135,19 @@ export default function DataCollector() {
     }
   };
 
-    const generateMnemonic = () => {
-      const mnemonic = mnemonicGenerate();
-      setMnemonic(mnemonic);
-      setModalStep(2);
-    };
+  const generateMnemonic = () => {
+    const mnemonic = mnemonicGenerate();
+    setMnemonic(mnemonic);
+    setModalStep(2);
+  };
 
-    const confirmMnemonic = () => {
-      if (userMnemonic !== mnemonic) {
-        setAlertMessage("Mnemonics do not match. Please try again.");
-      } else {
-        setModalStep(3);
-      }
-    };
+  const confirmMnemonic = () => {
+    if (userMnemonic !== mnemonic) {
+      setAlertMessage("Mnemonics do not match. Please try again.");
+    } else {
+      setModalStep(3);
+    }
+  };
 
   const handlePasswordSubmit = async () => {
     if (password !== confirmPassword) {
@@ -189,17 +193,50 @@ export default function DataCollector() {
 
 
 
-  const handleClick =async()=>{
-    try {
+
+const ReserveParaId =async()=>{
+  try {
+    const keyring = new Keyring({ type: 'sr25519' });
+    const alice = keyring.addFromUri('//Alice');
+
+
+    const wsProvider = new WsProvider('ws://3.109.51.55:9944');
+    const api = await ApiPromise.create({ provider: wsProvider });
+
+    const freerevrpara= await api.query.registrar.nextFreeParaId()
+    setParaId(freerevrpara.toPrimitive())
+
+    const transfer = api.tx.registrar.reserve();
+    console.log(transfer.toPrimitive())
+ 
+
+    const hash = await transfer.signAndSend(alice);
+    console.log(hash.toPrimitive())
     
+  } catch (error) {
+    console.log(error)
+    
+  }
+}
+
+
+
+
+
+
+
+
+  const handleClick = async () => {
+    try {
+
 
       navigate(`/DataCollector/Dashbord`)
 
-      
-      
+
+
     } catch (error) {
       console.log(error)
-      
+
     }
   }
 
@@ -208,20 +245,48 @@ export default function DataCollector() {
       <div>
         <MDBCard className='my-4' style={{ maxWidth: '1200px', margin: 'auto', borderRadius: '10px', boxShadow: '0px 4px 6px rgba(0, 0, 0, 0.1)', border: '1px solid rgba(0, 0, 0, 0.1)' }}>
           <MDBRow className='g-0'>
-            <MDBCol md='6' className="d-none d-md-block">
+            <MDBCol md='8' className="d-none d-md-block">
               <div className='mask rounded-5'></div>
               <MDBCard className='m-5' style={{ maxWidth: '600px' }}>
                 <MDBCardBody className='px-5'>
                   <h2 className="text-uppercase text-center mb-5">Create Your Blockchain</h2>
                   <MDBInput wrapperClass='mb-4' label='Host Name' size='lg' type='text' value={host} onChange={(e) => setHost(e.target.value)} />
                   <MDBInput wrapperClass='mb-4' label='Port Number' size='lg' type='number' value={port} onChange={(e) => setPort(e.target.value)} />
-                  <MDBInput wrapperClass='mb-4' label='Allocated ParaId' size='lg' type='number' value={paraId} onChange={(e) => setParaId(e.target.value)} />
+                  {/* <MDBInput wrapperClass='mb-4' label='Allocated ParaId' size='lg' type='number' value={paraId} onChange={(e) => setParaId(e.target.value)} /> */}
+
+                  {paraId == null ? (
+
+                    <div className="mb-4">
+                      <MDBBtn
+                        color='dark'
+                        wrapperClass='mb-4'
+                        onClick={ReserveParaId}
+
+                      >
+                        Reserve ParaId
+                      </MDBBtn>
+                    </div>
+
+                  ) : (
+
+                    <MDBInput
+                      label={paraId}
+                      placeholder="Allocated ParaId"
+                      id="formControlReadOnly"
+                      type="text"
+                      readonly
+                      wrapperClass='mb-4'
+                    />
+
+
+                  )}
+
                   <MDBInput wrapperClass='mb-4' label='UserName' size='lg' type='text' value={username} onChange={(e) => setUsername(e.target.value)} />
                   <MDBFile wrapperClass='mb-4' onChange={handleFileChange} size='lg' id='customFile' />
                   <MDBRow>
                     <MDBCol>
                       <MDBBtn className='mb-4 w-100 gradient-custom-4' size='lg' onClick={handleSubmit} disabled={loading} style={{ marginTop: '20px', marginBottom: '20px' }}>
-                        {loading ? "Createting Chain":"Create Chain"}
+                        {loading ? "Createting Chain" : "Create Chain"}
                       </MDBBtn>
                     </MDBCol>
                     <MDBCol>
@@ -330,43 +395,43 @@ export default function DataCollector() {
 
 
       {uploadLoading ? (
-            <>
+        <>
 
-              <MDBModal staticBackdrop open={uploadLoading}  tabIndex='-1'>
-                <MDBModalDialog >
-                  <MDBModalContent>
-                    <MDBModalHeader>
-                      <MDBModalTitle></MDBModalTitle>
-                      {/* <MDBBtn className='btn-close' color='none' onClick={addrecordmodal}></MDBBtn> */}
-                    </MDBModalHeader>
-                    <MDBModalBody>
-                      <div>
-                        <h3 style={{ fontSize: '1.5rem' }}>{addRecordStatus}</h3>
-                        <figure className='figure'>
-                          <img
-                            src={GifULR}
-                            className='figure-img img-fluid rounded shadow-3 mb-3'
-                            alt='...'
-                            style={{ maxWidth: '100%', height: 'auto' }}
-                          />
-                        </figure>
-                      </div>
+          <MDBModal staticBackdrop open={uploadLoading} tabIndex='-1'>
+            <MDBModalDialog >
+              <MDBModalContent>
+                <MDBModalHeader>
+                  <MDBModalTitle></MDBModalTitle>
+                  {/* <MDBBtn className='btn-close' color='none' onClick={addrecordmodal}></MDBBtn> */}
+                </MDBModalHeader>
+                <MDBModalBody>
+                  <div>
+                    <h3 style={{ fontSize: '1.5rem' }}>{addRecordStatus}</h3>
+                    <figure className='figure'>
+                      <img
+                        src={GifULR}
+                        className='figure-img img-fluid rounded shadow-3 mb-3'
+                        alt='...'
+                        style={{ maxWidth: '100%', height: 'auto' }}
+                      />
+                    </figure>
+                  </div>
 
-                    </MDBModalBody>
+                </MDBModalBody>
 
-                    <MDBModalFooter>
-                      <MDBBtn color='danger' onClick={addrecordmodal} >
-                        {loading ? "Cancel":"Close"}
-                      </MDBBtn>
-                      <MDBBtn color='sucess' disabled={loading} onClick={handleClick} >
-                        Conntect to Chain
-                      </MDBBtn>
-                    </MDBModalFooter>
-                  </MDBModalContent>
-                </MDBModalDialog>
-              </MDBModal>
-            </>
-          ) : null}
+                <MDBModalFooter>
+                  <MDBBtn color='danger' onClick={addrecordmodal} >
+                    {loading ? "Cancel" : "Close"}
+                  </MDBBtn>
+                  <MDBBtn color='sucess' disabled={loading} onClick={handleClick} >
+                    Conntect to Chain
+                  </MDBBtn>
+                </MDBModalFooter>
+              </MDBModalContent>
+            </MDBModalDialog>
+          </MDBModal>
+        </>
+      ) : null}
 
 
     </div>

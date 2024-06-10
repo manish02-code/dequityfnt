@@ -38,6 +38,10 @@ function Header() {
     const [selectedAccountlocal, setSelectedAccountlocal] = useState();
     const [ParticipantProfileInfo, setParticipantProfileInfo] = useState();
 
+    const [copyStatusImage3, setcopyStatusImage3] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+    const [copyStatusImage4, setcopyStatusImage4] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+    const [copyStatusImage5, setcopyStatusImage5] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
+
     const [basicModal, setBasicModal] = useState(false);
     const toggleOpen = () => setBasicModal(!basicModal);
 
@@ -202,7 +206,8 @@ function Header() {
         console.log("change Accunt", e.target.innerText)
         conn(e.target.innerText)
         localStorage.setItem('Selected Account', e.target.innerText);
-     
+        setSelectedAccountlocal(e.target.innerText)
+
     };
 
     const profileinfo = async () => {
@@ -319,12 +324,6 @@ function Header() {
 
         try {
 
-            await cryptoWaitReady().then(() => {
-                // load all available addresses and accounts
-                keyring.loadAll({ ss58Format: 42, type: 'sr25519' });
-
-                // additional initialization here, including rendering
-            });
 
             if (!accountName) {
                 setAlertMessage("Account name is required.");
@@ -357,13 +356,27 @@ function Header() {
 
             // Trigger the download
             downloadJson(json, `${pair.address}.json`);
+            
+            localStorage.setItem('Selected Account', pair.address);
+            setSelectedAccountlocal(pair.address)
+            setSelectedAccount(pair.address);
 
-
-
+            console.log(pair.address)
             await encryptAndStoreMnemonic(pair.address, mnemonic, password, RSApublic, RSAprivet);
 
             setAlertMessage("Account created and saved successfully.");
             setaccountCreatModal(false);
+
+
+            if (selectedValue == "Buyer") {
+
+                navigate('/DataCollector/CreateProfileBuyer')
+
+
+            } else {
+
+                navigate("/Perticipent/CreateProfile")
+            }
             setModalStep(1)
             setMnemonic('')
             setUserMnemonic('')
@@ -374,17 +387,6 @@ function Header() {
             setRSAprivet('')
             setChecked(false)
             setAlertMessage('')
-
-
-            if (selectedValue == "Buyer") {
-                window.location.reload();
-                navigate('/DataCollector/CreateProfileBuyer')
-                
-
-            } else {
-                window.location.reload();
-                navigate("/Perticipent/CreateProfile")
-            }
 
 
         } catch (error) {
@@ -406,11 +408,12 @@ function Header() {
 
 
 
-    const LogoutButton=()=>{
+    const LogoutButton = () => {
         setSelectedAccount('')
         localStorage.removeItem('Selected Account');
-        window.location.reload();
+
         navigate("/")
+        window.location.reload();
     }
 
 
@@ -484,28 +487,26 @@ function Header() {
 
     const test = async () => {
         const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${fetchAllAccounts()[1]}`)
+
         const tt = await decryptMnemonic(encryptedMnemonic, "123")
         console.log(tt)
 
     }
 
+ 
 
 
 
 
 
     const RsaNext = () => {
-
-
         setModalStep(5);
         setAlertMessage('')
-
     }
 
 
     const CreateAccount = async () => {
         setaccountCreatModal(!accountCreatModal)
-
 
     }
 
@@ -519,11 +520,15 @@ function Header() {
 
 
 
-    useEffect(() => {
+    useEffect(async () => {
         const accounts = fetchAllAccounts();
         setallAccounts(accounts);
         const selaccnt = localStorage.getItem('Selected Account');
         setSelectedAccountlocal(selaccnt)
+        await cryptoWaitReady();
+        keyring.loadAll({ ss58Format: 42, type: 'sr25519' });
+
+
     }, []);
 
     ////////////////////////////////////////////////////////////////////////////////////////
@@ -697,6 +702,42 @@ function Header() {
                                 <div>
                                     <p>Your generated mnemonic is:</p>
                                     <p><strong>{mnemonic}</strong></p>
+                                    <div style={{ position: 'relative' }}>
+                                        <button
+                                            className="btn btn-secondary btn-sm"
+                                            style={{
+                                                position: 'absolute',
+                                                bottom: '5px',
+                                                right: '5px',
+                                                marginTop: '10px'
+                                            }}
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(mnemonic);
+                                                setcopyStatusImage3("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU");
+                                            }}
+                                            >
+                                            <figure
+                                                className='figure'
+                                                style={{
+                                                    width: '30px',
+                                                    height: '30px',
+                                                    margin: '0'
+                                                }}
+                                            >
+                                                <img
+                                                    src={copyStatusImage3}
+                                                    className='figure-img img-fluid rounded shadow-3 mb-3'
+                                                    alt='...'
+                                                    style={{
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        objectFit: 'contain'
+                                                    }}
+                                                />
+                                            </figure>
+                                        </button>
+
+                                    </div>
                                     <MDBInput
                                         wrapperClass='mb-4'
                                         label='Confirm Mnemonic'
@@ -719,9 +760,81 @@ function Header() {
                                             <MDBModalBody>
                                                 <p style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px' }}>
                                                     {RSApublic}
+                                                    <div style={{ position: 'relative' }}>
+                                                        <button
+                                                            className="btn btn-secondary btn-sm"
+                                                            style={{
+                                                                position: 'absolute',
+                                                                bottom: '5px',
+                                                                right: '5px',
+                                                                marginTop: '10px'
+                                                            }}
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText(RSApublic);
+                                                                setcopyStatusImage5("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU");
+                                                            }}
+                                                        >
+                                                            <figure
+                                                                className='figure'
+                                                                style={{
+                                                                    width: '30px',
+                                                                    height: '30px',
+                                                                    margin: '0'
+                                                                }}
+                                                            >
+                                                                <img
+                                                                    src={copyStatusImage5}
+                                                                    className='figure-img img-fluid rounded shadow-3 mb-3'
+                                                                    alt='...'
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        objectFit: 'contain'
+                                                                    }}
+                                                                />
+                                                            </figure>
+                                                        </button>
+
+                                                    </div>
                                                 </p>
                                                 <p style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px' }}>
                                                     {RSAprivet}
+                                                    <div style={{ position: 'relative' }}>
+                                                        <button
+                                                            className="btn btn-secondary btn-sm"
+                                                            style={{
+                                                                position: 'absolute',
+                                                                bottom: '5px',
+                                                                right: '5px',
+                                                                marginTop: '10px'
+                                                            }}
+                                                            onClick={() => {
+                                                                navigator.clipboard.writeText( RSAprivet);
+                                                                setcopyStatusImage4("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU");
+                                                            }}
+                                                        >
+                                                            <figure
+                                                                className='figure'
+                                                                style={{
+                                                                    width: '30px',
+                                                                    height: '30px',
+                                                                    margin: '0'
+                                                                }}
+                                                            >
+                                                                <img
+                                                                    src={copyStatusImage4}
+                                                                    className='figure-img img-fluid rounded shadow-3 mb-3'
+                                                                    alt='...'
+                                                                    style={{
+                                                                        width: '100%',
+                                                                        height: '100%',
+                                                                        objectFit: 'contain'
+                                                                    }}
+                                                                />
+                                                            </figure>
+                                                        </button>
+
+                                                    </div>
                                                 </p>
 
                                                 <MDBCheckbox
