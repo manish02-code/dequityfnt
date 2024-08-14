@@ -24,6 +24,8 @@ import { u8aToHex, stringToU8a, hexToU8a, u8aToString } from '@polkadot/util';
 import { ApiPromise, WsProvider, Keyring } from '@polkadot/api';
 import { useNavigate } from "react-router-dom"
 
+
+
 export default function DataCollector() {
   const [GifULR, setGifURL] = useState("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
   const [addRecordStatus, setaddRecordStatus] = useState(' ')
@@ -49,7 +51,7 @@ export default function DataCollector() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [receiverAddress, setReceiverAddress] = useState('');
   const [amount, setAmount] = useState('');
- 
+
 
   const [cntNodeIp, setcntNodeIp] = useState("")
 
@@ -72,10 +74,12 @@ export default function DataCollector() {
 
   const navigate = useNavigate();
 
+  console.log("Env testninng: ", process.env.REACT_APP_SECRET_NAME
+  )
 
 
   useEffect(() => {
-    const ws = new WebSocket('ws://localhost:8081');
+    const ws = new WebSocket(`ws://${process.env.REACT_APP_BACKEND_SERVER_WEBSOCKET}`);
 
     ws.onopen = () => {
 
@@ -106,6 +110,22 @@ export default function DataCollector() {
     setuploadLoading(true)
 
     try {
+      if (!host || !paraId || !port || !username) {
+        setAlertMessage("Please fill in all required fields.");
+        setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
+        setLoading(false);
+        setuploadLoading(false);
+        return;
+      }
+
+      if (/\s/.test(host) || /\s/.test(paraId) || /\s/.test(port) || /\s/.test(username)) {
+        setAlertMessage("Fields should not contain spaces.");
+        setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
+        setLoading(false);
+        setuploadLoading(false);
+        console.log("contain Spaces")
+        return;
+      }
       if (selectedFile) {
         const formData = new FormData();
         formData.append('host', host);
@@ -114,7 +134,7 @@ export default function DataCollector() {
         formData.append('username', username);
         formData.append('privateKey', selectedFile);
 
-        const response = await axios.post('http://localhost:8080/para/parachain', formData, {
+        const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/parachain`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -177,7 +197,7 @@ export default function DataCollector() {
       const keyring = new Keyring({ type: 'sr25519' });
       const sender = keyring.addFromSeed(miniSecret);
 
-      const wsProvider = new WsProvider('ws://3.109.51.55:9944');
+      const wsProvider = new WsProvider(process.env.REACT_APP_RELAY);
       const api = await ApiPromise.create({ provider: wsProvider });
 
       const transfer = api.tx.balances.transferAllowDeath(receiverAddress, amount);
@@ -194,30 +214,31 @@ export default function DataCollector() {
 
 
 
-const ReserveParaId =async()=>{
-  try {
-    const keyring = new Keyring({ type: 'sr25519' });
-    const alice = keyring.addFromUri('//Alice');
+  const ReserveParaId = async () => {
+    try {
+      const keyring = new Keyring({ type: 'sr25519' });
+      const alice = keyring.addFromUri('//Alice');
 
 
-    const wsProvider = new WsProvider('ws://3.109.51.55:9944');
-    const api = await ApiPromise.create({ provider: wsProvider });
+      const wsProvider = new WsProvider(process.env.REACT_APP_RELAY);
+      const api = await ApiPromise.create({ provider: wsProvider });
 
-    const freerevrpara= await api.query.registrar.nextFreeParaId()
-    setParaId(freerevrpara.toPrimitive())
+      const freerevrpara = await api.query.registrar.nextFreeParaId()
+      setParaId(freerevrpara.toPrimitive())
+      console.log("hakdhsdhaskjdskjdhkj======> ", freerevrpara.toPrimitive())
 
-    const transfer = api.tx.registrar.reserve();
-    console.log(transfer.toPrimitive())
- 
+      const transfer = api.tx.registrar.reserve();
+      console.log(transfer.toPrimitive())
 
-    const hash = await transfer.signAndSend(alice);
-    console.log(hash.toPrimitive())
-    
-  } catch (error) {
-    console.log(error)
-    
+
+      const hash = await transfer.signAndSend(alice);
+      console.log(hash.toPrimitive())
+
+    } catch (error) {
+      console.log(error)
+
+    }
   }
-}
 
 
 

@@ -106,7 +106,7 @@ export default function DataBuyer() {
 
   const adddataonChain = async () => {
     setaddRecordStatus("Adding Data on the Chain.")
-    const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+    const wsProvider = new WsProvider(process.envs.REACT_APP_RELAY); // Replace with your endpoint
     const api = await ApiPromise.create({ provider: wsProvider });
     await web3Enable("Manish")
     const selaccnt = localStorage.getItem('Selected Account');
@@ -154,7 +154,7 @@ export default function DataBuyer() {
 
 
   const FecthingOfferDeatils = async (OfferIds) => {
-    const wsProvider = new WsProvider('ws://3.109.51.55:9945'); // Replace with your endpoint
+    const wsProvider = new WsProvider('ws://13.200.30.231:9945'); // Replace with your endpoint
     let api;
 
     if (!selectedAccount) {
@@ -198,7 +198,7 @@ export default function DataBuyer() {
 
     try {
       console.log(accountAdddress)
-      await axios.get("http://localhost:8080/para/AccountFundRequest", {
+      await axios.get(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/AccountFundRequest`, {
         body: {
           address: accountAdddress
         }
@@ -218,7 +218,7 @@ export default function DataBuyer() {
 
   useEffect(() => {
     const FecthProfile = async () => {
-      const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+      const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
       const api = await ApiPromise.create({ provider: wsProvider });
 
       if (!selectedAccount) {

@@ -161,7 +161,7 @@ function Header() {
 
 
     const conn = async (account) => {
-        const wsProvider = new WsProvider('ws://3.109.51.55:9944');
+        const wsProvider = new WsProvider('ws://13.200.30.231:9944');
         const api = await ApiPromise.create({ provider: wsProvider });
         setapi(api)
 
@@ -201,17 +201,10 @@ function Header() {
         }
     }
 
-    const changeAccount = (e) => {
-        setSelectedAccount(e.target.innerText);
-        console.log("change Accunt", e.target.innerText)
-        conn(e.target.innerText)
-        localStorage.setItem('Selected Account', e.target.innerText);
-        setSelectedAccountlocal(e.target.innerText)
 
-    };
 
     const profileinfo = async () => {
-        const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+        const wsProvider = new WsProvider('ws://13.200.30.231:9944'); // Replace with your endpoint
         const api = await ApiPromise.create({ provider: wsProvider });
 
         if (!selectedAccount) {
@@ -256,6 +249,7 @@ function Header() {
     const [userMnemonic, setUserMnemonic] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+    const [depositeId,setdepositeId]=useState('')
     const [accountName, setaccountName] = useState('');
     const [alertMessage, setAlertMessage] = useState("");
     const [accountCreatModal, setaccountCreatModal] = useState(false);
@@ -280,6 +274,7 @@ function Header() {
         setRSAprivet('')
         setChecked(false)
         setAlertMessage('')
+        setdepositeId('')
 
         setaccountCreatModal(!accountCreatModal)
     };
@@ -291,6 +286,35 @@ function Header() {
 
 
 
+
+    const changeAccount = (e) => {
+        setSelectedAccount(e.target.innerText);
+        console.log("change Accunt", e.target.innerText)
+        conn(e.target.innerText)
+        localStorage.setItem('Selected Account', e.target.innerText);
+        setSelectedAccountlocal(e.target.innerText)
+        const rsaPublic=localStorage.getItem('Rsa Public Key')
+        createDepositeId(e.target.innerText,rsaPublic)
+
+    };
+
+    
+
+    const createDepositeId = async (AccountId,Rsapublic) => {
+        try {
+            const res = await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKeys/CreateDeositeId`, {
+             
+                    accountId: AccountId,
+                    rsaPublicKey:Rsapublic,
+            });
+            localStorage.setItem('Selected Account DepositeID', res.data);
+            return(res.data);
+        } catch (error) {
+            console.log(error);
+        }
+    }
+
+   
 
     const generateMnemonic = () => {
         const mnemonic = mnemonicGenerate();
@@ -304,7 +328,7 @@ function Header() {
             setAlertMessage("Mnemonics do not match. Please try again.");
         } else {
             try {
-                const res = await axios.get('http://localhost:8080/IpfsKEys/CreateRSAkeys');
+                const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/CreateRSAkeys`);
                 setRSAprivet(res.data.privateKey);
                 setRSApublic(res.data.publicKey);
                 setModalStep(3);
@@ -356,13 +380,21 @@ function Header() {
 
             // Trigger the download
             downloadJson(json, `${pair.address}.json`);
+
+
+
             
             localStorage.setItem('Selected Account', pair.address);
+            localStorage.setItem('Rsa Public Key', RSApublic);
+
+            const depositeID=await createDepositeId(pair.address,RSApublic);
+            setdepositeId(depositeID)
+
             setSelectedAccountlocal(pair.address)
             setSelectedAccount(pair.address);
 
             console.log(pair.address)
-            await encryptAndStoreMnemonic(pair.address, mnemonic, password, RSApublic, RSAprivet);
+            await encryptAndStoreMnemonic(pair.address, mnemonic, password, RSApublic, RSAprivet,depositeId);
 
             setAlertMessage("Account created and saved successfully.");
             setaccountCreatModal(false);
@@ -432,11 +464,12 @@ function Header() {
     };
 
     // Encrypt and store mnemonic
-    const encryptAndStoreMnemonic = async (accountAddress, mnemonic, password, rsaPublicKey, rsaPrivateKey) => {
+    const encryptAndStoreMnemonic = async (accountAddress, mnemonic, password, rsaPublicKey, rsaPrivateKey,depositrID) => {
         const data = {
             mnemonic: mnemonic,
             rsaPublicKey: rsaPublicKey,
             rsaPrivateKey: rsaPrivateKey,
+            depositrID:depositrID,
         };
 
         try {

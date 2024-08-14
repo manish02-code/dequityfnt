@@ -1,5 +1,5 @@
 import './App.css';
-import { Route, Routes,useParams } from 'react-router-dom';
+import { Route, Routes, useParams } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 
 
@@ -13,27 +13,29 @@ import Homepage from './pages/Hompage/Homepage'
 import CreateProfileBuyer from './pages/DataBuyer/CreateProfileBuyer/CreateProfileBuyer'
 import ConnectedCollector from './pages/DataCollector/ConnectedParaChain/ConnectedParaChain'
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import ErrorBoundary from './component/ErrorBoundary';
 
 
 
 
 function App() {
-  
+
 
   return (
     <div className="App">
-      <Header />
-      <Routes>
-             <Route exact path='/' element={<Homepage />} />
-            <Route exact path='/DataCollector' element={<DataCollector />} />
-            <Route exact path='/DataCollector/Dashbord' element={<ConnectedCollector />} />
-            <Route exact path='/DataCollector/CreateProfileBuyer' element={<CreateProfileBuyer />} />
-            <Route exact path='/Perticipent' element={<Perticipent />} />
-            <Route exact path='/Perticipent/CreateProfile' element={<CreateParticipantProfile />} />
-            <Route exact path='/DataBuyer' element={<DataBuyer />} />
-       
-      </Routes>
-      <Footer />
+      <ErrorBoundary>
+        <Header />
+        <Routes>
+          <Route path='/' element={<Homepage />} />
+          <Route path='/DataCollector' element={<DataCollector />} />
+          <Route path='/DataCollector/Dashbord' element={<ConnectedCollector />} />
+          <Route path='/DataCollector/CreateProfileBuyer' element={<CreateProfileBuyer />} />
+          <Route path='/Perticipent' element={<Perticipent />} />
+          <Route path='/Perticipent/CreateProfile' element={<CreateParticipantProfile />} />
+          <Route path='/DataBuyer' element={<DataBuyer />} />
+        </Routes>
+        <Footer />
+      </ErrorBoundary>
     </div>
   );
 }

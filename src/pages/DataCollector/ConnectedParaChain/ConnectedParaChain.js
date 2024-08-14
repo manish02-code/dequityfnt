@@ -19,15 +19,18 @@ import {
     MDBModalFooter,
     MDBCardImage,
     MDBCheckbox,
-    MDBTextArea
+    MDBTextArea,
+    MDBIcon
 } from 'mdb-react-ui-kit';
 import axios from 'axios';
 import { useState, useEffect } from "react";
+
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import { encodeAddress, mnemonicGenerate } from '@polkadot/util-crypto';
 import { Keyring } from '@polkadot/keyring';
 
+import { Html5QrcodeScanner } from "html5-qrcode";
 
 
 
@@ -47,12 +50,17 @@ export default function ConnectedCollector() {
     const [sovereignAccount, setsovereignAccount] = useState('')
     const [sudoAccount, setSudoAccout] = useState('')
 
+    const [QRcodedata, setQRcodedata] = useState('No result');
+
+
+
     const [accountCreatModal3, setaccountCreatModal3] = useState(false);
     const [cntNodeIp, setcntNodeIp] = useState("")
+    const [cntNodePort, setcntNodePort] = useState(8844)
     const accountCreatModalToggle3 = () => {
 
         setaccountCreatModal3(!accountCreatModal3);
-        
+
     }
     ///Creat Participant Profile
     const [Participantname, setParticipantname] = useState("")
@@ -95,6 +103,9 @@ export default function ConnectedCollector() {
     }
 
 
+    /////////////////////////////////////////////////////
+    //QRcode Scanning Part
+
 
 
 
@@ -106,10 +117,10 @@ export default function ConnectedCollector() {
     const [hasCID, sethasCID] = useState('')
     const [scrollableModal, setScrollableModal] = useState(false);
 
-    const depositeData = async (hasCID,PerticipentEncyKey) => {
+    const depositeData = async (hasCID, PerticipentEncyKey) => {
 
-        console.log("CID: ",hasCID,"ENkey: ",PerticipentEncyKey)
-        
+        console.log("CID: ", hasCID, "ENkey: ", PerticipentEncyKey)
+
 
         addrecordmodal()
         setaddRecordStatus("Depositing Data..")
@@ -144,33 +155,27 @@ export default function ConnectedCollector() {
                 formData.append('RSAKey', RSApublicKey);
                 formData.append('ReportFile', file);
 
-           await axios.post('http://localhost:8080/IpfsKEys/UploadIPFS', formData, {
+                await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/UploadIPFS`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
-                }).then(async response=>{
+                }).then(async response => {
                     setaddRecordStatus(response.data.message);
-  
-    
-    
-    
-                   
-                    const encKey=response.data.encryptionKey;
-                    const CId=response.data.result.IpfsHash;
+
+
+
+
+
+                    const encKey = response.data.encryptionKey;
+                    const CId = response.data.result.IpfsHash;
 
                     setPerticipentEncyKey(encKey)
                     sethasCID(CId)
 
 
 
-                    await depositeData(CId,encKey)
+                    await depositeData(CId, encKey)
                 })
-
-               
-
-
-            
-
 
             } else {
                 setaddRecordStatus("Please select a file");
@@ -191,16 +196,17 @@ export default function ConnectedCollector() {
     const conn = async () => {
         try {
 
-            const wsProvider = new WsProvider(`ws://${cntNodeIp}:8844`); // Replace with your endpoint
+            const wsProvider = new WsProvider(`ws://${cntNodeIp}:${cntNodePort}`); // Replace with your endpoint
             let api = await ApiPromise.create({ provider: wsProvider });
 
-            console.log("Connected to you node")
+          
 
             setparachianConnectionStatus(true)
 
 
             const paraid = await api.query.parachainInfo.parachainId()
             setChainID(paraid.toPrimitive())
+            console.log("Connected to you node",paraid.toPrimitive())
 
             checkParachainStatus(paraid.toPrimitive())
 
@@ -214,17 +220,18 @@ export default function ConnectedCollector() {
                 paraid: paraid.toPrimitive()
             };
 
-            console.log("FEcthing sovereign Accounts")
-            axios.post('http://localhost:8080/para/getSovereignAccount', params)
+        
+            axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/getSovereignAccount`, params)
                 .then(response => {
                     setsovereignAccount(response.data);
+                    console.log("FEcthing sovereign Accounts",response.data)
 
                 })
                 .catch(error => {
                     console.error(error);
                 });
 
-
+                console.log("FEcthing sovereign Accounts",sovereignAccount)
             const data = await api.query.system.account(sovereignAccount);
             console.log(data.data.toString())
 
@@ -242,11 +249,9 @@ export default function ConnectedCollector() {
 
 
     async function getEncodedCallData(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID) {
-        const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+        const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); 
         let api = await ApiPromise.create({ provider: wsProvider });
 
-
-        // Create the extrinsic call
         const call = await api.tx.hrmp.createParticipantProfileXcm(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID);
 
         // Get the encoded call data
@@ -264,7 +269,7 @@ export default function ConnectedCollector() {
 
 
     async function getDeositdataEncodedCallData(ParticipantEnKey, ParticipantIpfsCid, ParticipantaccountID) {
-        const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+        const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
         let api = await ApiPromise.create({ provider: wsProvider });
 
 
@@ -309,7 +314,7 @@ export default function ConnectedCollector() {
             const endcalldata = await encodedCallData;
             console.log('Encoded Call Data:', endcalldata);
 
-            const wsProvider = new WsProvider(`ws://${cntNodeIp}:8844`);
+            const wsProvider = new WsProvider(`ws://${cntNodeIp}:${cntNodePort}`);
             const api = await ApiPromise.create({ provider: wsProvider });
 
             const dest = {
@@ -432,7 +437,7 @@ export default function ConnectedCollector() {
 
     async function sendXcmCall(encodedCallDataHex) {
         try {
-            const wsProvider = new WsProvider(`ws://${cntNodeIp}:8844`);
+            const wsProvider = new WsProvider(`ws://${cntNodeIp}:${cntNodePort}`);
             const api = await ApiPromise.create({ provider: wsProvider });
 
             const keyring = new Keyring({ type: 'sr25519' });
@@ -521,7 +526,7 @@ export default function ConnectedCollector() {
             setAlertMessage("Mnemonics do not match. Please try again.");
         } else {
             try {
-                const res = await axios.get('http://localhost:8080/IpfsKEys/CreateRSAkeys');
+                const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/CreateRSAkeys`);
                 setRSAprivet(res.data.privateKey);
                 setRSApublic(res.data.publicKey);
                 setModalStep(3);
@@ -536,31 +541,107 @@ export default function ConnectedCollector() {
 
     const checkParachainStatus = async (ChainID) => {
         try {
-          // Connect to the relay chain node
-          const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
-          const api = await ApiPromise.create({ provider: wsProvider });
-      
-          // Query the list of registered parachains
-          const parachains = await api.query.paras.parachains();
-          console.log('Registered Parachains:', parachains.toPrimitive())
-          const parachain=parachains.toPrimitive()
-  
-          const isParachainRegistered = parachain.includes(ChainID);
-          
-       
-    
-          console.log(`Parachain  registered: `,isParachainRegistered);
-          setparachianRegisterStatus(isParachainRegistered)
-      
-          if (isParachainRegistered) {             
-            console.log(`Parachain ${ChainID} is registered.`);
-          } else {
-            console.error(`Parachain ${ChainID} is not registered.`);
-          }
+            // Connect to the relay chain node
+            const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
+            const api = await ApiPromise.create({ provider: wsProvider });
+
+            // Query the list of registered parachains
+            const parachains = await api.query.paras.parachains();
+            console.log('Registered Parachains:', parachains.toPrimitive())
+            const parachain = parachains.toPrimitive()
+
+            const isParachainRegistered = parachain.includes(ChainID);
+
+
+
+            console.log(`Parachain  registered: `, isParachainRegistered);
+            setparachianRegisterStatus(isParachainRegistered)
+
+            if (isParachainRegistered) {
+                console.log(`Parachain ${ChainID} is registered.`);
+            } else {
+                console.error(`Parachain ${ChainID} is not registered.`);
+            }
         } catch (error) {
-          console.error(`Error checking parachain status: ${error.message}`);
+            console.error(`Error checking parachain status: ${error.message}`);
         }
-      };
+    };
+
+
+
+
+
+
+    const DecrytpDId = async (value) => {
+        try {
+            const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/DecrytpDId`, {
+                params: {
+                    DepositeId: value
+                }
+            });
+
+            const splitData = res.data.split("::");
+            console.log("Decrypted Data:", splitData);
+            setdepositedAccount(splitData[0])
+            setRSApublicKey(splitData[1])
+
+
+                  {/* <MDBInput style={{ marginBottom: '20px' }} label="Account ID" value={depositedAccount} onChange={(e) => setdepositedAccount(e.target.value)} id="form1" type="text" />
+
+                            <MDBTextArea style={{ marginBottom: '20px' }} label="RSA Public Key" value={RSApublicKey} onChange={(e) => setRSApublicKey(e.target.value)} id="textAreaExample" /> 
+                            */}
+
+
+        } catch (error) {
+            console.log(error)
+
+        }
+
+    }
+
+    const QrCodeScanner = ({ isOpen, onClose }) => {
+        const [scanResult, setScanResult] = useState(null);
+    
+        useEffect(() => {
+            if (isOpen) {
+                const scanner = new Html5QrcodeScanner('reader', {
+                    qrbox: {
+                        width: 250,
+                        height: 250,
+                    },
+                    fps: 5,
+                });
+    
+                const onScanSuccess = (result) => {
+                    scanner.clear();
+                    setScanResult(result);
+                    DecrytpDId(result)
+       
+                   return result;
+                };
+    
+                const onScanError = (err) => {
+                    console.warn(err);
+                };
+    
+                scanner.render(onScanSuccess, onScanError);
+    
+                return () => {
+                    scanner.clear();
+                };
+            }
+        }, [isOpen]);
+    
+        return (
+            <div>
+                <p>Scan your QR code</p>
+                {scanResult ? <div>Data: {scanResult}</div> : <div id="reader"></div>}
+            </div>
+        );
+    };
+    
+
+    
 
 
 
@@ -576,15 +657,12 @@ export default function ConnectedCollector() {
 
         fetchData();
 
-       
+
+
         return () => {
             // Cleanup code here if necessary
         };
     }, [parachianConnectionStatus]); // Add any dependencies if needed
-
-
-
-
 
 
 
@@ -653,7 +731,7 @@ export default function ConnectedCollector() {
                                         }}
                                     >
                                         <p className="text-muted mb-1">
-                                            Register  
+                                            Register
                                         </p>
                                         <p className="text-muted mb-1"></p>
                                     </div>) : (<div
@@ -798,7 +876,7 @@ export default function ConnectedCollector() {
                                             </MDBBtn>
                                         </div>
                                         <div>
-                                            <MDBBtn size="lg" rounded  disabled={!parachianRegisterStatus} className='bg-success' onClick={() => setScrollableModal(true)}>
+                                            <MDBBtn size="lg" rounded className='bg-success' onClick={() => setScrollableModal(true)}>
                                                 Deposite Data
                                             </MDBBtn>
                                         </div>
@@ -827,6 +905,14 @@ export default function ConnectedCollector() {
                                 type='text'
                                 value={cntNodeIp}
                                 onChange={(e) => setcntNodeIp(e.target.value)}
+                            />
+                            <MDBInput
+                                wrapperClass='mb-4'
+                                label='Enter your Node Port number'
+                                size='lg'
+                                type='number'
+                                value={cntNodePort}
+                                onChange={(e) => setcntNodePort(e.target.value)}
                             />
                             <MDBBtn onClick={conn}>Connect</MDBBtn>
                         </MDBModalBody>
@@ -990,7 +1076,7 @@ export default function ConnectedCollector() {
                                                 navigator.clipboard.writeText(mnemonic);
                                                 setcopyStatusImage3("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU");
                                             }}
-                                            >
+                                        >
                                             <figure
                                                 className='figure'
                                                 style={{
@@ -1088,7 +1174,7 @@ export default function ConnectedCollector() {
                                                                 marginTop: '10px'
                                                             }}
                                                             onClick={() => {
-                                                                navigator.clipboard.writeText( RSAprivet);
+                                                                navigator.clipboard.writeText(RSAprivet);
                                                                 setcopyStatusImage4("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQpyPyEOzpIz1YAp9NEt84w7-gGaEkuwQ0jgMa7_OBpvlE_pMoC6kiQiHthu-yu1ffHs7o&usqp=CAU");
                                                             }}
                                                         >
@@ -1161,10 +1247,13 @@ export default function ConnectedCollector() {
                             <div style={{ marginBottom: '20px' }}>
                                 <MDBFile label='Select you record' id='customFile' onChange={handleFileChange} />
                             </div>
-                            <MDBInput style={{ marginBottom: '20px' }} label="Account ID" value={depositedAccount} onChange={(e) => setdepositedAccount(e.target.value)} id="form1" type="text" />
+                            {/* <MDBInput style={{ marginBottom: '20px' }} label="Account ID" value={depositedAccount} onChange={(e) => setdepositedAccount(e.target.value)} id="form1" type="text" />
 
-                            <MDBTextArea style={{ marginBottom: '20px' }} label="RSA Public Key" value={RSApublicKey} onChange={(e) => setRSApublicKey(e.target.value)} id="textAreaExample" />
-
+                            <MDBTextArea style={{ marginBottom: '20px' }} label="RSA Public Key" value={RSApublicKey} onChange={(e) => setRSApublicKey(e.target.value)} id="textAreaExample" /> 
+                            */}
+                            <div>
+                                <QrCodeScanner isOpen={scrollableModal} onClose={() => setScrollableModal(false)}  />
+                            </div>
 
 
                         </MDBModalBody>
@@ -1186,3 +1275,5 @@ export default function ConnectedCollector() {
     </>)
 
 }
+
+

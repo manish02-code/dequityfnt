@@ -86,7 +86,7 @@ const CreateProfileBuyer = () => {
   
 
   const CreateProfile = async (name, age, gender, ethnicity) => {
-    const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+    const wsProvider = new WsProvider(process.envs.REACT_APP_RELAY); // Replace with your endpoint
     const api = await ApiPromise.create({ provider: wsProvider });
 
     const selaccnt = localStorage.getItem('Selected Account');

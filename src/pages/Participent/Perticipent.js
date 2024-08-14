@@ -40,6 +40,7 @@ import axios from 'axios';
 import { Keyring } from '@polkadot/keyring';
 import { decrypt } from "n-krypta";
 
+import QRCode from 'qrcode'
 
 export default function Participant() {
   const [api, setapi] = useState()
@@ -74,6 +75,9 @@ export default function Participant() {
   const [OfferId, setOfferId] = useState();
   const [OfferDetails, setOfferDetails] = useState([]);
   const [searchQuery2, setSearchQuery2] = useState('');
+ 
+  const DepoId= localStorage.getItem('Selected Account DepositeID')
+  const [DepositeID,setDepositeID]=useState(DepoId)
 
 
   const [passwordModal, setpasswordModal] = useState(false);
@@ -87,7 +91,9 @@ export default function Participant() {
   const [checked, setChecked] = useState(false);
 
 
-
+  const [QRCodeModal, setQRCodeModal] = useState(false);
+  const [QrcodeURL, setQrcodeURL] = useState('');
+  const toggleQRCodeModal = () => setQRCodeModal(!QRCodeModal);
 
 
 
@@ -162,6 +168,17 @@ export default function Participant() {
 
 
 
+  const genrateQrCode = async () => {
+    try {
+      const response = await QRCode.toDataURL(DepoId);
+      setQrcodeURL(response);
+    } catch (error) {
+      console.log(error);
+
+    }
+  }
+
+
   //This Function use Take RSA key of User
   const handlePasswordSubmit = async (e) => {
     // setencryptedFile(e.target.value);
@@ -175,6 +192,8 @@ export default function Participant() {
 
     setRSApublicKey(tt.rsaPublicKey)
     setRSAPrivetKey(tt.rsaPrivateKey)
+
+
     togglePasswordModal()
 
     setChecked(true)
@@ -197,7 +216,7 @@ export default function Participant() {
   const AppylyForOffer = async () => {
     addrecordmodal()
     setaddRecordStatus("Applying for Offer")
-    const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+    const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
     const api = await ApiPromise.create({ provider: wsProvider });
     await web3Enable("Manish")
     const selaccnt = localStorage.getItem('Selected Account');
@@ -261,7 +280,7 @@ export default function Participant() {
 
 
   const FecthingOfferDeatils = async (OfferRecord) => {
-    const wsProvider = new WsProvider('ws://3.109.51.55:9945'); // Replace with your endpoint
+    const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
     let api;
 
     if (!selectedAccount) {
@@ -501,7 +520,7 @@ export default function Participant() {
         formData.append('RSAKey', RSApublicKey);
         formData.append('ReportFile', file);
 
-        const response = await axios.post('http://localhost:8080/IpfsKEys/UploadIPFS', formData, {
+        const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/UploadIPFS`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -529,17 +548,17 @@ export default function Participant() {
 
   const addRecordonChain = async (ecryKey, cid) => {
     setaddRecordStatus("Adding Record to the Chain.")
-    const wsProvider = new WsProvider('ws://3.109.51.55:9944'); // Replace with your endpoint
+    const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
     const api = await ApiPromise.create({ provider: wsProvider });
 
     // const selaccnt = localStorage.getItem('Selected Account');
 
     const keyring = new Keyring({ type: 'sr25519' });
     const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selectedAccount}`)
- 
+
 
     const tt = await decryptMnemonic(encryptedMnemonic, password)
-  
+
     const accMnemonic = keyring.addFromUri(tt.mnemonic);
     if (!selectedAccount) {
       console.error("No account selected. Please select an account.");
@@ -564,8 +583,8 @@ export default function Participant() {
       console.error("Error fetching profile:", error);
     } finally {
       api.disconnect(); // Disconnect from the Polkadot node after fetching data
-      
-    setpassword('')
+
+
     }
 
   }
@@ -573,18 +592,18 @@ export default function Participant() {
     try {
       setpasswordModal(true);
       console.log(cid1, encKey);
-  
-      const response = await axios.post(`http://localhost:8080/IpfsKEys/Decryptfils`, {
+
+      const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/Decryptfils`, {
         cid: cid1,
         key: encKey,
         RSaPVtKey: RSAPrivetKey
       });
-  
+
       console.log(response);
-  
+
       const { file, filename, mimeType } = response.data;
       console.log(response.data)
-  
+
       // Convert base64 string to binary data
       const binaryString = atob(file);
       const binaryLength = binaryString.length;
@@ -592,29 +611,29 @@ export default function Participant() {
       for (let i = 0; i < binaryLength; i++) {
         bytes[i] = binaryString.charCodeAt(i);
       }
-  
+
       const blob = new Blob([bytes], { type: mimeType });
       const url = URL.createObjectURL(blob);
-  
+
       const a = document.createElement('a');
       a.href = url;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-  
+
       URL.revokeObjectURL(url);
-  
+
     } catch (error) {
       console.error(error);
     }
   };
-  
+
   const requestFunds = async (address) => {
 
     try {
       console.log(accountAdddress)
-      await axios.post("http://localhost:8080/para/AccountFundRequest", {
+      await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/AccountFundRequest`, {
         body: {
           address: accountAdddress
         }
@@ -648,17 +667,9 @@ export default function Participant() {
 
 
 
-
-
-
-
-
-
-
-
   useEffect(() => {
     const FecthProfile = async () => {
-      const wsProvider = new WsProvider('ws://3.109.51.55:9945'); // Replace with your endpoint
+      const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
       const api = await ApiPromise.create({ provider: wsProvider });
 
       if (!selectedAccount) {
@@ -669,7 +680,7 @@ export default function Participant() {
       try {
         const data = await api.query.hrmp.participantProfile(accountAdddress);
         const result = data.toPrimitive()
-        console.log(result)
+        genrateQrCode()
         setname(result.name)
         setage(result.age)
         setgender(result.gender)
@@ -751,8 +762,13 @@ export default function Participant() {
                     </div>
                     <div style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px', display: 'flex', justifyContent: 'space-between' }}>
                       <div>
-                        <MDBBtn size="lg" rounded className='bg-success' onClick={requestFunds} >
+                        <MDBBtn size="sm" rounded className='bg-success' onClick={requestFunds} >
                           {fundRequestStatus}
+                        </MDBBtn>
+                      </div>
+                      <div>
+                        <MDBBtn size="sm" rounded className='bg-success' onClick={toggleQRCodeModal} >
+                          Show QRcode
                         </MDBBtn>
                       </div>
 
@@ -1143,6 +1159,43 @@ export default function Participant() {
                   <MDBModalFooter>
 
                     <MDBBtn onClick={handlePasswordSubmit}>Sing Transaction</MDBBtn>
+                  </MDBModalFooter>
+                </MDBModalContent>
+              </MDBModalDialog>
+            </MDBModal>
+          </>
+
+
+
+          <>
+            <MDBBtn onClick={toggleQRCodeModal}>Vertically centered modal</MDBBtn>
+
+            <MDBModal tabIndex='-1' open={QRCodeModal} onClose={() => setQRCodeModal(false)}>
+              <MDBModalDialog centered>
+                <MDBModalContent>
+                  <MDBModalHeader>
+                    <MDBModalTitle>Scan To Desposite</MDBModalTitle>
+                    <MDBBtn className='btn-close' color='none' onClick={toggleQRCodeModal}></MDBBtn>
+                  </MDBModalHeader>
+                  <MDBModalBody>
+                    {DepositeID?
+                    <MDBCardImage
+                    src={QrcodeURL}
+                
+                    style={{ width: '500px' }}
+                    fluid />:
+                    <MDBCardImage
+                      src='https://media.istockphoto.com/id/687868664/vector/error-404-panda-surprise-page-not-found-template-for-web-site-china-bear-does-not-know-and-is.jpg?s=170667a&w=0&k=20&c=kwFCeXzvNzGUcVcu4in3ymF-DPd4rRH7Vy6RM4Q50MQ='
+                 
+                      style={{ width: '500px' }}
+                      fluid />
+                    }
+                    
+                  </MDBModalBody>
+                  <MDBModalFooter>
+                    <MDBBtn color='secondary' onClick={toggleQRCodeModal}>
+                      Close
+                    </MDBBtn>
                   </MDBModalFooter>
                 </MDBModalContent>
               </MDBModalDialog>
