@@ -4,6 +4,7 @@ import { ApiPromise, WsProvider } from '@polkadot/api';
 import { web3Accounts, web3Enable, web3FromAddress } from '@polkadot/extension-dapp';
 import { injectExtension } from '@polkadot/extension-inject';
 import { useParams, useNavigate } from "react-router-dom"
+import { formatBalance } from '@polkadot/util';
 
 import {
   MDBCol,
@@ -52,11 +53,11 @@ export default function Participant() {
 
   ////Profile info State
   const [profileFetch, setprofileFetch] = useState(true)
-  const [accountBalance, setaccountBalance] = useState(0)
+  const [accountBalance, setaccountBalance] = useState('')
   const [accountAdddress, setaccountAdddress] = useState(acc)
   const [copyStatusImage, setcopyStatusImage] = useState("https://static.vecteezy.com/system/resources/previews/015/805/731/original/copy-paste-symbol-sign-document-file-copy-duplicate-paste-archive-icon-free-vector.jpg")
   const [name, setname] = useState()
-  const [age, setage] = useState(1)
+  const [age, setage] = useState()
   const [Gender, setgender] = useState()
   const [Ethenicity, setEthenicity] = useState()
   const [DataRecord, setDataRecord] = useState([])
@@ -73,6 +74,7 @@ export default function Participant() {
   const [searchQuery, setSearchQuery] = useState('');
   const [OfferRecord, setOfferRecord] = useState([])
   const [OfferId, setOfferId] = useState();
+  const [RSprivet, setRSprivet] = useState('');
   const [OfferDetails, setOfferDetails] = useState([]);
   const [searchQuery2, setSearchQuery2] = useState('');
  
@@ -212,16 +214,57 @@ export default function Participant() {
   };
 
 
+  const RSprivetkey = (e) => {
+    // setencryptedFile(e.target.value);
+    setRSprivet(e.target.value)
+  };
+
+
+
+  function formatRSAPrivateKey(key) {
+    // Remove any existing PEM headers or footers for private keys
+    const cleanedKey = key
+        .replace(/-----BEGIN PRIVATE KEY-----/, '')
+        .replace(/-----END PRIVATE KEY-----/, '')
+        .replace(/\s+/g, '');
+
+
+    console.log('Cleaned Key:', cleanedKey);
+
+    // Ensure the key is in a valid base64 format
+    if (!/^([A-Za-z0-9+/=]+)$/.test(cleanedKey)) {
+        throw new Error("Invalid RSA Private Key format");
+    }
+
+    
+
+    // Add the PEM header and footer without trailing whitespace
+    const pemFormattedKey = `-----BEGIN PRIVATE KEY----- ${cleanedKey} -----END PRIVATE KEY-----`;
+
+    console.log( pemFormattedKey);
+
+    return pemFormattedKey; // Remove any trailing whitespace
+}
+
+
+
 
   const AppylyForOffer = async () => {
     addrecordmodal()
     setaddRecordStatus("Applying for Offer")
-    const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
+    const wsProvider = new WsProvider(process.env.REACT_APP_RELAY);
     const api = await ApiPromise.create({ provider: wsProvider });
-    await web3Enable("Manish")
-    const selaccnt = localStorage.getItem('Selected Account');
-    const injector = await web3FromAddress(selaccnt);
 
+    // const selaccnt = localStorage.getItem('Selected Account');
+
+    const keyring = new Keyring({ type: 'sr25519' });
+    const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selectedAccount}`)
+
+    const tt = await decryptMnemonic(encryptedMnemonic, password)
+
+  
+
+    const accMnemonic = keyring.addFromUri(tt.mnemonic);
     if (!selectedAccount) {
       console.error("No account selected. Please select an account.");
       return;
@@ -236,8 +279,17 @@ export default function Participant() {
     }
 
     try {
-      const data = await api.tx.hrmp.applyOffer(OfferId).signAndSend(selaccnt, { signer: injector.signer });;
+      const test= formatRSAPrivateKey(tt.rsaPrivateKey)
+      console.log(tt)
+      console.log(test.trim())
+      console.log(test)
+      console.log(tt.rsaPrivateKey.trim())
+      console.log(RSprivet)
+        
+
+      const data = await api.tx.hrmp.applyOffer(OfferId,test.trim()).signAndSend(accMnemonic);;
       const result = data.toPrimitive()
+      console.log(data)
       console.log(result)
       setaddRecordStatus("Applied Sucessfully")
       setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
@@ -548,7 +600,7 @@ export default function Participant() {
 
   const addRecordonChain = async (ecryKey, cid) => {
     setaddRecordStatus("Adding Record to the Chain.")
-    const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
+    const wsProvider = new WsProvider(process.env.REACT_APP_RELAY);
     const api = await ApiPromise.create({ provider: wsProvider });
 
     // const selaccnt = localStorage.getItem('Selected Account');
@@ -556,8 +608,10 @@ export default function Participant() {
     const keyring = new Keyring({ type: 'sr25519' });
     const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selectedAccount}`)
 
-
+    console.log("5555555555",encryptedMnemonic)
     const tt = await decryptMnemonic(encryptedMnemonic, password)
+
+  
 
     const accMnemonic = keyring.addFromUri(tt.mnemonic);
     if (!selectedAccount) {
@@ -588,6 +642,7 @@ export default function Participant() {
     }
 
   }
+  
   const DecrytpandDownload = async (cid1, encKey) => {
     try {
       setpasswordModal(true);
@@ -686,7 +741,18 @@ export default function Participant() {
         setgender(result.gender)
         setEthenicity(result.ethnicity)
         setDataRecord(result.data)
+        console.log(result.data)
         setOfferRecord(result.appliedofferId)
+
+        const { data: balance } = await api.query.system.account(accountAdddress);
+        // The balance is divided into free, reserved, and miscFrozen fields
+        
+        const formattedBalance = formatBalance(balance.free, { decimals: 12, withUnit: 'DQT' }); // or 'KSM' for Kusama
+        setaccountBalance(formattedBalance)
+
+    
+
+
         const d = await FecthingOfferDeatils(result.appliedofferId)
 
       } catch (error) {
@@ -717,7 +783,7 @@ export default function Participant() {
                       style={{ width: '150px' }}
                       fluid />
                     <div style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px' }}>
-                      <p className="text-muted mb-1">Balance: {accountBalance} DQT</p>
+                      <p className="text-muted mb-1">Balance: {accountBalance} </p>
                       <p className="text-muted mb-1"></p>
                     </div>
                     <div style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px', position: 'relative' }}>
@@ -1084,15 +1150,32 @@ export default function Participant() {
                   <div style={{ marginBottom: '20px' }}>
                     <MDBInput label="Enter Offer ID " id="form1" type="Number" value={OfferId} onChange={OfferID} />
                   </div>
+                  {/* <div style={{ marginBottom: '20px' }}>
+                    <MDBInput label="Enter Rsa key " type="text"  value={RSprivet} onChange={RSprivetkey} />
+                  </div> */}
 
                   {/* Logic here*/}
 
+                  <MDBCheckbox
+                      className='custom-checkbox'
+                      id='checkNoLabel'
+                      label='Use My RSA Key'
+                      checked={checked}
+                      onChange={clickCheckBox}
+                    />
+                    {/* <MDBInput label="Enter RSA Public " id="form1" type="text" value={RSApublicKey} onChange={userRSAPublicKey} /> */}
+                 
+
                 </MDBModalBody>
+
                 <MDBModalFooter>
                   <MDBBtn color='danger' onClick={() => setScrollableModal2(!setScrollableModal2)}>
                     Cancel
                   </MDBBtn>
-                  <MDBBtn color='success' onClick={AppylyForOffer}>Apply</MDBBtn>
+
+                  {checked==true?(<MDBBtn color='success' onClick={AppylyForOffer}>Apply</MDBBtn>)
+                  :(<MDBBtn disabled={true} color='success' onClick={AppylyForOffer}>Apply</MDBBtn>)}
+                
                 </MDBModalFooter>
               </MDBModalContent>
             </MDBModalDialog>
@@ -1168,7 +1251,7 @@ export default function Participant() {
 
 
           <>
-            <MDBBtn onClick={toggleQRCodeModal}>Vertically centered modal</MDBBtn>
+           
 
             <MDBModal tabIndex='-1' open={QRCodeModal} onClose={() => setQRCodeModal(false)}>
               <MDBModalDialog centered>

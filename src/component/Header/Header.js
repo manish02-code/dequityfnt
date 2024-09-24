@@ -161,7 +161,7 @@ function Header() {
 
 
     const conn = async (account) => {
-        const wsProvider = new WsProvider('ws://13.200.30.231:9944');
+        const wsProvider = new WsProvider(process.env.REACT_APP_RELAY);
         const api = await ApiPromise.create({ provider: wsProvider });
         setapi(api)
 
@@ -192,6 +192,7 @@ function Header() {
 
                 // location.href = "localhost:3000/DataBuyer";
                 localStorage.setItem('Selected Account Profile', ParticipantProfileInfo);
+                
                 navigate("/DataBuyer")
                 window.location.reload();
 

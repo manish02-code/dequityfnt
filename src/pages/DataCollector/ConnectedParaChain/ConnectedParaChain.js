@@ -24,6 +24,7 @@ import {
 } from 'mdb-react-ui-kit';
 import axios from 'axios';
 import { useState, useEffect } from "react";
+import { formatBalance } from '@polkadot/util';
 
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
@@ -49,6 +50,7 @@ export default function ConnectedCollector() {
     const [parachianRegisterStatus, setparachianRegisterStatus] = useState(false)
     const [sovereignAccount, setsovereignAccount] = useState('')
     const [sudoAccount, setSudoAccout] = useState('')
+    const [accountBalance, setaccountBalance] = useState('')
 
     const [QRcodedata, setQRcodedata] = useState('No result');
 
@@ -67,7 +69,7 @@ export default function ConnectedCollector() {
     const [Participantage, setParticipantage] = useState(null)
     const [Participantgender, setParticipantgender] = useState("")
     const [Participantethnicity, setParticipantethnicity] = useState("")
-    const [ParticipantaccountID, setParticipantaccountID] = useState("dfsdfsdf")
+    const [ParticipantaccountID, setParticipantaccountID] = useState("")
     const [perticipentModal, setperticipentModal] = useState(false);
 
     const CreateParticipent = () => {
@@ -221,20 +223,20 @@ export default function ConnectedCollector() {
             };
 
         
-            axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/getSovereignAccount`, params)
+           await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/getSovereignAccount`, params)
                 .then(response => {
-                    setsovereignAccount(response.data);
-                    console.log("FEcthing sovereign Accounts",response.data)
-
+                    setsovereignAccount(response.data.accountAddress);
                 })
                 .catch(error => {
                     console.error(error);
                 });
 
-                console.log("FEcthing sovereign Accounts",sovereignAccount)
-            const data = await api.query.system.account(sovereignAccount);
-            console.log(data.data.toString())
-
+                const { data: balance } = await api.query.system.account(sovereignAccount);
+      
+                const formattedBalance = formatBalance(balance.free, { decimals: 12, withUnit: 'DQT' });
+                console.log(balance)
+                setaccountBalance(formattedBalance)
+        
 
             accountCreatModalToggle3()
 
@@ -762,7 +764,7 @@ export default function ConnectedCollector() {
                                             marginTop: '10px'
                                         }}
                                     >
-                                        <p className="text-muted mb-1">Balance: ABCdfsdfsd DQT</p>
+                                        <p className="text-muted mb-1">Balance: {accountBalance} </p>
                                         <p className="text-muted mb-1"></p>
                                     </div>
 
