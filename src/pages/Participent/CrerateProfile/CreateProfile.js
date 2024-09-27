@@ -15,14 +15,15 @@ import {
 
 
 } from 'mdb-react-ui-kit';
+import axios from 'axios';
 import { useNavigate } from "react-router-dom";
-import {  decrypt } from "n-krypta";
+import { decrypt } from "n-krypta";
 import { Keyring } from '@polkadot/keyring';
 
 
 const CreateParticipantProfile = () => {
   const [name, setName] = useState('');
-  const [age, setAge] = useState(0);
+  const [age, setAge] = useState();
   const [gender, setGender] = useState('');
   const [ethnicity, setEthnicity] = useState('');
   const [loading, setLoading] = useState(false); // State variable for loading state
@@ -31,7 +32,8 @@ const CreateParticipantProfile = () => {
   const [MessaageToAalet, setMessaageToAalet] = useState("")
   const [GifULR, setGifURL] = useState("")
 
-
+  const [fundrequestStatus, setfundrequestStatus] = useState(false)
+  const [bgcolor,setbgcolor]=useState('#eee')
   const navigate = useNavigate();
 
   const toggleOpen = () => setMessagebasicModal(!MessagebasicModal);
@@ -70,22 +72,22 @@ const CreateParticipantProfile = () => {
     setLoading(true);
 
     try {
-        await CreateProfile(name, age, gender, ethnicity);
+      await CreateProfile(name, age, gender, ethnicity);
     } catch (error) {
-        if (error) {
-            console.log("Low Balance", error);
+      if (error) {
+        console.log("Low Balance", error);
 
-            setMessaageToAalet("Invalid Transaction, Low Balance.");
-            setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
+        setMessaageToAalet("Invalid Transaction, Low Balance.");
+        setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
 
-            toggleOpen();
-        } else {
-            console.error("An error occurred:", error.message);
-        }
+        toggleOpen();
+      } else {
+        console.error("An error occurred:", error.message);
+      }
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
-};
+  };
 
 
 
@@ -94,7 +96,7 @@ const CreateParticipantProfile = () => {
 
     e.preventDefault();
     setpasswordModal(true);
-   
+
   };
 
 
@@ -116,34 +118,34 @@ const CreateParticipantProfile = () => {
   const CreateProfile = async (name, age, gender, ethnicity) => {
 
     try {
-     
-   
+
+
       const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
       const api = await ApiPromise.create({ provider: wsProvider });
-  
+
       const selaccnt = localStorage.getItem('Selected Account');
       console.log(selaccnt)
-  
+
       const keyring = new Keyring({ type: 'sr25519' });
-  
+
       const encryptedMnemonic = localStorage.getItem(`encryptedMnemonic_${selaccnt}`)
       const tt = await decryptMnemonic(encryptedMnemonic, password)
-  
+
       const accMnemonic = keyring.addFromUri(tt.mnemonic);
-  
-  
+
+
       const result = await api.tx.hrmp.createParticipantProfile(name, age, gender, ethnicity).signAndSend(accMnemonic);
-  
+
       if (!result || !result.hash) {
         const errorMessage = result?.error?.message || 'Transaction failed';
         setpassword('')
-  
+
         throw Error(errorMessage)
       } else {
         setMessaageToAalet("Transection Sucessfull, Profile Created.")
         setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
         setpassword('')
-  
+
         toggleOpen()
         // console.log('Profile created. Transaction hash:', result.toPrimitive());
         // Handle success here
@@ -152,10 +154,42 @@ const CreateParticipantProfile = () => {
     } catch (error) {
       setpassword('')
       console.log(error)
-      
+
     }
-   
+
   };
+
+
+
+  const requestFunds = async (event) => {
+    event.preventDefault();  
+    try {
+      setfundrequestStatus(true);
+  
+      const selaccnt = localStorage.getItem('Selected Account');
+      console.log(selaccnt);
+  
+      const params = {
+        address: selaccnt,
+      };
+  
+      await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/para/AccountFundRequest`, params)
+        .then((response) => {
+          console.log(response);
+          setfundrequestStatus(true);
+          setbgcolor('#C8E6C9');
+        })
+        .catch((error) => {
+          console.error(error);
+          setfundrequestStatus(false);
+          setbgcolor('#f1948a');
+        });
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+
 
   return (
     <>
@@ -164,19 +198,44 @@ const CreateParticipantProfile = () => {
           <MDBSpinner color='primary' />
         </div>
       ) : (
-        <div className='d-flex justify-content-center align-items-center' style={{ height: '50vh' }}>
+        <div className='d-flex justify-content-center ' style={{  paddingBottom: '20px' }}>
           <MDBCard className='w-50 shadow-3-strong border border-secondary'>
             <MDBCardBody>
               <MDBRow className='justify-content-center'>
                 <MDBCol>
-                  <form onSubmit={handleSubmit}>
+                  <form >
                     <MDBInput className='mb-4' type='text' id='form1Example1' label='Name' value={name} onChange={handleNameChange} />
                     <MDBInput className='mb-4' type='number' id='form1Example2' label='Age' min='0' value={age} onChange={handleAgeChange} />
                     <MDBInput className='mb-4' type='text' id='form1Example3' label='Gender' value={gender} onChange={handleGenderChange} />
                     <MDBInput className='mb-4' type='text' id='form1Example4' label='Ethnicity' value={ethnicity} onChange={handleEthnicityChange} />
-                    <MDBBtn size='sm' type='submit' block style={{ width: '20%', height: '15%' }}>
-                      Create Profile
-                    </MDBBtn>
+                    <div style={{
+                      backgroundColor: bgcolor,
+                      borderRadius: '10px',
+                      padding: '10px',
+                      marginTop: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                       gap: '20px'
+                    }}  className='mb-4'>
+                      <p className="text-muted mb-1" style={{ margin: 0 }}>
+                        {localStorage.getItem('Selected Account')}
+                      </p>
+                      <MDBBtn size='sm' color='warning'  style={{ width: '20%' ,borderRadius: '10px'}} onClick={requestFunds}>
+                        Request fund
+                      </MDBBtn>
+                    </div>
+
+
+                    {fundrequestStatus ? (
+                      <MDBBtn  size='sm'  color='#58d68d' block style={{ width: '20%', height: '15%' ,borderRadius: '10px'}}>
+                        Create Profile
+                      </MDBBtn>
+                    ) : (
+                      <MDBBtn disabled size='sm' color='success' onClick={handleSubmit} block style={{ width: '20%', height: '15%' ,borderRadius: '10px'}}>
+                        Create Profile
+                      </MDBBtn>
+                    )}
                   </form>
                 </MDBCol>
               </MDBRow>
@@ -239,7 +298,7 @@ const CreateParticipantProfile = () => {
                 />
               </MDBModalBody>
               <MDBModalFooter>
-               
+
                 <MDBBtn onClick={handlePasswordSubmit}>Sing Transaction</MDBBtn>
               </MDBModalFooter>
             </MDBModalContent>

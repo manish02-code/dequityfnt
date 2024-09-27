@@ -79,9 +79,10 @@ export default function DataCollector() {
 
 
   useEffect(() => {
-    const ws = new WebSocket(`ws://${process.env.REACT_APP_BACKEND_SERVER_WEBSOCKET}`);
+    const ws = new WebSocket(`${process.env.REACT_APP_BACKEND_SERVER_WEBSOCKET}`);
 
     ws.onopen = () => {
+      setStatusMessage('working')
 
     };
 
@@ -134,7 +135,7 @@ export default function DataCollector() {
         formData.append('username', username);
         formData.append('privateKey', selectedFile);
 
-        const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/parachain`, formData, {
+        const response = await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/para/parachain`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -225,7 +226,7 @@ export default function DataCollector() {
 
       const freerevrpara = await api.query.registrar.nextFreeParaId()
       setParaId(freerevrpara.toPrimitive())
-      console.log("hakdhsdhaskjdskjdhkj======> ", freerevrpara.toPrimitive())
+
 
       const transfer = api.tx.registrar.reserve();
       console.log(transfer.toPrimitive())

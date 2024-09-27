@@ -303,7 +303,7 @@ function Header() {
 
     const createDepositeId = async (AccountId,Rsapublic) => {
         try {
-            const res = await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKeys/CreateDeositeId`, {
+            const res = await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/IpfsKeys/CreateDeositeId`, {
              
                     accountId: AccountId,
                     rsaPublicKey:Rsapublic,
@@ -329,7 +329,7 @@ function Header() {
             setAlertMessage("Mnemonics do not match. Please try again.");
         } else {
             try {
-                const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/CreateRSAkeys`);
+                const res = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/CreateRSAkeys`);
                 setRSAprivet(res.data.privateKey);
                 setRSApublic(res.data.publicKey);
                 setModalStep(3);
@@ -785,13 +785,13 @@ function Header() {
                             )}
                             {modalStep === 4 && (
                                 <div>
-                                    <MDBModalDialog scrollable>
+                                    <MDBModalDialog scrollable >
                                         <MDBModalContent>
                                             <MDBModalHeader>
                                                 <MDBModalTitle>RSA Keys</MDBModalTitle>
 
                                             </MDBModalHeader>
-                                            <MDBModalBody>
+                                            <MDBModalBody style={{maxWidth: '2000px'}}>
                                                 <p style={{ backgroundColor: '#eee', borderRadius: '10px', padding: '10px', marginTop: '10px' }}>
                                                     {RSApublic}
                                                     <div style={{ position: 'relative' }}>

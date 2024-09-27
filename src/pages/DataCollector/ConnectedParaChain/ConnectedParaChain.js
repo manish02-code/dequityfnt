@@ -157,7 +157,7 @@ export default function ConnectedCollector() {
                 formData.append('RSAKey', RSApublicKey);
                 formData.append('ReportFile', file);
 
-                await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/UploadIPFS`, formData, {
+                await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/UploadIPFS`, formData, {
                     headers: {
                         'Content-Type': 'multipart/form-data',
                     },
@@ -198,7 +198,9 @@ export default function ConnectedCollector() {
     const conn = async () => {
         try {
 
-            const wsProvider = new WsProvider(`ws://${cntNodeIp}:${cntNodePort}`); // Replace with your endpoint
+            // const connetiontype=  process.env.DEVELOPEMENT_TYPE === "PRODUCTION" ? `wss` ||  `ws`
+            console.log(process.env.WEBSOCKET)
+            const wsProvider = new WsProvider(`wss://${cntNodeIp}:${cntNodePort}`); // Replace with your endpoint
             let api = await ApiPromise.create({ provider: wsProvider });
 
           
@@ -223,9 +225,10 @@ export default function ConnectedCollector() {
             };
 
         
-           await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/getSovereignAccount`, params)
+           await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/para/getSovereignAccount`, params)
                 .then(response => {
                     setsovereignAccount(response.data.accountAddress);
+                    console.log(response)
                 })
                 .catch(error => {
                     console.error(error);
@@ -528,7 +531,7 @@ export default function ConnectedCollector() {
             setAlertMessage("Mnemonics do not match. Please try again.");
         } else {
             try {
-                const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/CreateRSAkeys`);
+                const res = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/CreateRSAkeys`);
                 setRSAprivet(res.data.privateKey);
                 setRSApublic(res.data.publicKey);
                 setModalStep(3);
@@ -576,7 +579,7 @@ export default function ConnectedCollector() {
 
     const DecrytpDId = async (value) => {
         try {
-            const res = await axios.get(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/DecrytpDId`, {
+            const res = await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/DecrytpDId`, {
                 params: {
                     DepositeId: value
                 }
@@ -600,26 +603,27 @@ export default function ConnectedCollector() {
         }
 
     }
-
     const QrCodeScanner = ({ isOpen, onClose }) => {
         const [scanResult, setScanResult] = useState(null);
+        const [scanning, setScanning] = useState(false); 
     
         useEffect(() => {
-            if (isOpen) {
+            if (isOpen && !scanning) {
                 const scanner = new Html5QrcodeScanner('reader', {
                     qrbox: {
                         width: 250,
                         height: 250,
                     },
-                    fps: 5,
+                    fps: 10,
                 });
     
                 const onScanSuccess = (result) => {
-                    scanner.clear();
-                    setScanResult(result);
-                    DecrytpDId(result)
-       
-                   return result;
+                    if (!scanning) { 
+                        setScanning(true); 
+                        scanner.clear();  
+                        setScanResult(result); 
+                        DecrytpDId(result);
+                    }
                 };
     
                 const onScanError = (err) => {
@@ -632,15 +636,20 @@ export default function ConnectedCollector() {
                     scanner.clear();
                 };
             }
-        }, [isOpen]);
+        }, [isOpen, scanning]);
     
         return (
             <div>
                 <p>Scan your QR code</p>
-                {scanResult ? <div>Data: {scanResult}</div> : <div id="reader"></div>}
+                {scanResult ? (
+                    <div>Data: {scanResult}</div>
+                ) : (
+                    <div id="reader"></div>
+                )}
             </div>
         );
     };
+    
     
 
     

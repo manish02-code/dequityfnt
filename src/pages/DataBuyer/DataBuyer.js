@@ -293,7 +293,7 @@ export default function DataBuyer() {
 
     try {
       console.log(accountAdddress)
-      await axios.get(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/AccountFundRequest`, {
+      await axios.get(`${process.env.REACT_APP_BACKEND_SERVER}/para/AccountFundRequest`, {
         body: {
           address: accountAdddress
         }
@@ -401,7 +401,7 @@ export default function DataBuyer() {
     try {
       setpasswordModal(true);
 
-      const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/Decryptfils`, {
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/Decryptfils`, {
         cid: cid1,
         key: encKey,
         RSaPVtKey: RSAPrivetKey

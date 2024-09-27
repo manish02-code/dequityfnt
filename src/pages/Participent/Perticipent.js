@@ -332,7 +332,7 @@ export default function Participant() {
 
 
   const FecthingOfferDeatils = async (OfferRecord) => {
-    const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
+    const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); 
     let api;
 
     if (!selectedAccount) {
@@ -572,7 +572,7 @@ export default function Participant() {
         formData.append('RSAKey', RSApublicKey);
         formData.append('ReportFile', file);
 
-        const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/UploadIPFS`, formData, {
+        const response = await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/UploadIPFS`, formData, {
           headers: {
             'Content-Type': 'multipart/form-data',
           },
@@ -648,7 +648,7 @@ export default function Participant() {
       setpasswordModal(true);
       console.log(cid1, encKey);
 
-      const response = await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/Decryptfils`, {
+      const response = await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/IpfsKEys/Decryptfils`, {
         cid: cid1,
         key: encKey,
         RSaPVtKey: RSAPrivetKey
@@ -688,7 +688,7 @@ export default function Participant() {
 
     try {
       console.log(accountAdddress)
-      await axios.post(`http://${process.env.REACT_APP_BACKEND_SERVER}/para/AccountFundRequest`, {
+      await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/para/AccountFundRequest`, {
         body: {
           address: accountAdddress
         }
