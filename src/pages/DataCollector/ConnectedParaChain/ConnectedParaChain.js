@@ -200,7 +200,7 @@ export default function ConnectedCollector() {
 
             // const connetiontype=  process.env.DEVELOPEMENT_TYPE === "PRODUCTION" ? `wss` ||  `ws`
             console.log(process.env.WEBSOCKET)
-            const wsProvider = new WsProvider(`wss://${cntNodeIp}:${cntNodePort}`); // Replace with your endpoint
+            const wsProvider = new WsProvider(`wss://${cntNodeIp}`); // Replace with your endpoint
             let api = await ApiPromise.create({ provider: wsProvider });
 
           
@@ -319,7 +319,7 @@ export default function ConnectedCollector() {
             const endcalldata = await encodedCallData;
             console.log('Encoded Call Data:', endcalldata);
 
-            const wsProvider = new WsProvider(`ws://${cntNodeIp}:${cntNodePort}`);
+            const wsProvider = new WsProvider(`wss://${cntNodeIp}`);
             const api = await ApiPromise.create({ provider: wsProvider });
 
             const dest = {
@@ -442,7 +442,7 @@ export default function ConnectedCollector() {
 
     async function sendXcmCall(encodedCallDataHex) {
         try {
-            const wsProvider = new WsProvider(`ws://${cntNodeIp}:${cntNodePort}`);
+            const wsProvider = new WsProvider(`wss://${cntNodeIp}`);
             const api = await ApiPromise.create({ provider: wsProvider });
 
             const keyring = new Keyring({ type: 'sr25519' });
@@ -911,20 +911,13 @@ export default function ConnectedCollector() {
                         <MDBModalBody>
                             <MDBInput
                                 wrapperClass='mb-4'
-                                label='Enter your Node IP Address'
+                                label='Enter your Node Address'
                                 size='lg'
                                 type='text'
                                 value={cntNodeIp}
                                 onChange={(e) => setcntNodeIp(e.target.value)}
                             />
-                            <MDBInput
-                                wrapperClass='mb-4'
-                                label='Enter your Node Port number'
-                                size='lg'
-                                type='number'
-                                value={cntNodePort}
-                                onChange={(e) => setcntNodePort(e.target.value)}
-                            />
+                            
                             <MDBBtn onClick={conn}>Connect</MDBBtn>
                         </MDBModalBody>
                     </MDBModalContent>
