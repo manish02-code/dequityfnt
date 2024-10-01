@@ -139,12 +139,14 @@ const CreateParticipantProfile = () => {
       if (!result || !result.hash) {
         const errorMessage = result?.error?.message || 'Transaction failed';
         setpassword('')
+        setfundrequestStatus(false)
 
         throw Error(errorMessage)
       } else {
         setMessaageToAalet("Transection Sucessfull, Profile Created.")
         setGifURL("https://cdn.dribbble.com/users/147386/screenshots/5315437/success-tick-dribbble.gif")
         setpassword('')
+        setfundrequestStatus(false)
 
         toggleOpen()
         // console.log('Profile created. Transaction hash:', result.toPrimitive());
@@ -203,7 +205,7 @@ const CreateParticipantProfile = () => {
             <MDBCardBody>
               <MDBRow className='justify-content-center'>
                 <MDBCol>
-                  <form >
+                  <div >
                     <MDBInput className='mb-4' type='text' id='form1Example1' label='Name' value={name} onChange={handleNameChange} />
                     <MDBInput className='mb-4' type='number' id='form1Example2' label='Age' min='0' value={age} onChange={handleAgeChange} />
                     <MDBInput className='mb-4' type='text' id='form1Example3' label='Gender' value={gender} onChange={handleGenderChange} />
@@ -228,15 +230,15 @@ const CreateParticipantProfile = () => {
 
 
                     {fundrequestStatus ? (
-                      <MDBBtn  size='sm'  color='#58d68d' block style={{ width: '20%', height: '15%' ,borderRadius: '10px'}}>
+                      <MDBBtn size='sm' color='success' onClick={handleSubmit} block style={{ width: '20%', height: '15%' }}>
                         Create Profile
                       </MDBBtn>
                     ) : (
-                      <MDBBtn disabled size='sm' color='success' onClick={handleSubmit} block style={{ width: '20%', height: '15%' ,borderRadius: '10px'}}>
+                      <MDBBtn disabled size='sm' color='#58d68d' block style={{ width: '20%', height: '15%' }}>
                         Create Profile
                       </MDBBtn>
                     )}
-                  </form>
+                  </div>
                 </MDBCol>
               </MDBRow>
             </MDBCardBody>
