@@ -207,15 +207,8 @@ export default function ConnectedCollector() {
             // const connetiontype=  process.env.DEVELOPEMENT_TYPE === "PRODUCTION" ? `wss` ||  `ws`
           
 
-
-            try {
-                
-            } catch (error) {
-                
-            }
             const wsProvider = new WsProvider(`wss://${cntNodeIp}`); // Replace with your endpoint
 
-            console.log(wsProvider)
             
             // if (wsProvider.__internal__isConnected === false) {
             //     setLoading(false);
