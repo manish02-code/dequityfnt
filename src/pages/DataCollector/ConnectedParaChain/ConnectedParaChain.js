@@ -1,5 +1,7 @@
 
 import React from "react";
+import { Buffer } from 'buffer';
+
 
 import {
     MDBBtn,
@@ -54,7 +56,11 @@ export default function ConnectedCollector() {
 
     const [QRcodedata, setQRcodedata] = useState('No result');
 
-
+    const [wasmFile, setWasmFile] = useState(null);
+    const [genesisStateFile, setGenesisStateFile] = useState(null);
+    const [status, setStatus] = useState('');
+    const [registerparachainmodal, setregisterparachainmodal] = useState(false);
+    const [loading, setLoading] = useState(false);
 
     const [accountCreatModal3, setaccountCreatModal3] = useState(false);
     const [cntNodeIp, setcntNodeIp] = useState("")
@@ -199,18 +205,34 @@ export default function ConnectedCollector() {
         try {
 
             // const connetiontype=  process.env.DEVELOPEMENT_TYPE === "PRODUCTION" ? `wss` ||  `ws`
-            console.log(process.env.WEBSOCKET)
+          
+
+
+            try {
+                
+            } catch (error) {
+                
+            }
             const wsProvider = new WsProvider(`wss://${cntNodeIp}`); // Replace with your endpoint
+
+            console.log(wsProvider)
+            
+            // if (wsProvider.__internal__isConnected === false) {
+            //     setLoading(false);
+            //     alert('Error: Could not connect to the WebSocket provider.');
+            //     return;
+            // }
+           
             let api = await ApiPromise.create({ provider: wsProvider });
 
-          
+
 
             setparachianConnectionStatus(true)
 
 
             const paraid = await api.query.parachainInfo.parachainId()
             setChainID(paraid.toPrimitive())
-            console.log("Connected to you node",paraid.toPrimitive())
+            console.log("Connected to you node", paraid.toPrimitive())
 
             checkParachainStatus(paraid.toPrimitive())
 
@@ -224,8 +246,8 @@ export default function ConnectedCollector() {
                 paraid: paraid.toPrimitive()
             };
 
-        
-           await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/para/getSovereignAccount`, params)
+
+            await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/para/getSovereignAccount`, params)
                 .then(response => {
                     setsovereignAccount(response.data.accountAddress);
                     console.log(response)
@@ -234,19 +256,25 @@ export default function ConnectedCollector() {
                     console.error(error);
                 });
 
-                const { data: balance } = await api.query.system.account(sovereignAccount);
-      
-                const formattedBalance = formatBalance(balance.free, { decimals: 12, withUnit: 'DQT' });
-                console.log(balance)
-                setaccountBalance(formattedBalance)
-        
+            const { data: balance } = await api.query.system.account(sovereignAccount);
+
+            const formattedBalance = formatBalance(balance.free, { decimals: 12, withUnit: 'DQT' });
+            console.log(balance)
+            setaccountBalance(formattedBalance)
+
 
             accountCreatModalToggle3()
+
+            if (checkParachainStatus(paraid.toPrimitive()) === false) {
+
+                setregisterparachainmodal(true)
+            }
 
             return (api)
 
         } catch (error) {
-            console.error("Error fetching offer details:", error);
+            console.error("Error while connecting the parachain", error);
+            alert("Invalid node or node is not running")
             setparachianConnectionStatus(false)
         }
 
@@ -254,7 +282,7 @@ export default function ConnectedCollector() {
 
 
     async function getEncodedCallData(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID) {
-        const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); 
+        const wsProvider = new WsProvider(process.env.REACT_APP_RELAY);
         let api = await ApiPromise.create({ provider: wsProvider });
 
         const call = await api.tx.hrmp.createParticipantProfileXcm(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID);
@@ -564,8 +592,10 @@ export default function ConnectedCollector() {
 
             if (isParachainRegistered) {
                 console.log(`Parachain ${ChainID} is registered.`);
+                return true;
             } else {
                 console.error(`Parachain ${ChainID} is not registered.`);
+                return false;
             }
         } catch (error) {
             console.error(`Error checking parachain status: ${error.message}`);
@@ -591,7 +621,7 @@ export default function ConnectedCollector() {
             setRSApublicKey(splitData[1])
 
 
-                  {/* <MDBInput style={{ marginBottom: '20px' }} label="Account ID" value={depositedAccount} onChange={(e) => setdepositedAccount(e.target.value)} id="form1" type="text" />
+            {/* <MDBInput style={{ marginBottom: '20px' }} label="Account ID" value={depositedAccount} onChange={(e) => setdepositedAccount(e.target.value)} id="form1" type="text" />
 
                             <MDBTextArea style={{ marginBottom: '20px' }} label="RSA Public Key" value={RSApublicKey} onChange={(e) => setRSApublicKey(e.target.value)} id="textAreaExample" /> 
                             */}
@@ -605,8 +635,8 @@ export default function ConnectedCollector() {
     }
     const QrCodeScanner = ({ isOpen, onClose }) => {
         const [scanResult, setScanResult] = useState(null);
-        const [scanning, setScanning] = useState(false); 
-    
+        const [scanning, setScanning] = useState(false);
+
         useEffect(() => {
             if (isOpen && !scanning) {
                 const scanner = new Html5QrcodeScanner('reader', {
@@ -616,28 +646,28 @@ export default function ConnectedCollector() {
                     },
                     fps: 10,
                 });
-    
+
                 const onScanSuccess = (result) => {
-                    if (!scanning) { 
-                        setScanning(true); 
-                        scanner.clear();  
-                        setScanResult(result); 
+                    if (!scanning) {
+                        setScanning(true);
+                        scanner.clear();
+                        setScanResult(result);
                         DecrytpDId(result);
                     }
                 };
-    
+
                 const onScanError = (err) => {
                     console.warn(err);
                 };
-    
+
                 scanner.render(onScanSuccess, onScanError);
-    
+
                 return () => {
                     scanner.clear();
                 };
             }
         }, [isOpen, scanning]);
-    
+
         return (
             <div>
                 <p>Scan your QR code</p>
@@ -649,11 +679,82 @@ export default function ConnectedCollector() {
             </div>
         );
     };
-    
-    
 
-    
+    const handleWasmFileChange = (event) => {
+        setWasmFile(event.target.files[0]);
+    };
 
+    const handleGenesisStateFileChange = (event) => {
+        setGenesisStateFile(event.target.files[0]);
+    };
+
+
+    // Helper function to read a file as text using FileReader
+    const readFileAsText = (file) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+
+            reader.onload = (event) => {
+                const content = event.target.result; // Get the content from the FileReader
+                resolve(content); // Resolve the promise with the content
+            };
+
+            reader.onerror = (error) => {
+                reject(error); // Reject the promise on error
+            };
+
+            reader.readAsText(file); // Read the file as text
+        });
+    };
+
+
+    const submitParachain = async () => {
+        if (!wasmFile || !genesisStateFile || !ChainID) {
+            console.log("Please upload both files and provide a parachain ID.");
+            setStatus('Please upload both files and provide a parachain ID.');
+            return;
+        }
+    
+        setLoading(true); // Set loading to true at the beginning
+        setStatus('Submitting the transaction...');
+    
+        try {
+            const wasmData = await readFileAsText(wasmFile);
+            const genesisStateData = await readFileAsText(genesisStateFile);
+    
+            const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
+            const api = await ApiPromise.create({ provider: wsProvider });
+    
+            const keyring = new Keyring({ type: 'sr25519' });
+            const account = keyring.addFromUri('//Alice');
+    
+            const genesis = {
+                genesisHead: genesisStateData,
+                validationCode: wasmData,
+                paraKind: true
+            };
+    
+            const tx = api.tx.parasSudoWrapper.sudoScheduleParaInitialize(parseInt(ChainID), genesis);
+    
+            const unsub = await tx.signAndSend(account, async ({ status }) => {
+                if (status.isInBlock) {
+                    setStatus(`Transaction included at blockHash ${status.asInBlock}`);
+                } else if (status.isFinalized) {
+                    setStatus(`Transaction finalized at blockHash ${status.asFinalized}`);
+                    await new Promise((resolve) => setTimeout(resolve, 2300)); // Keep loading for 2.3 seconds
+                    setLoading(false); // Set loading to false after the timeout
+                } else if (status.isError) {
+                    setLoading(false); // Set loading to false in case of error
+                    setStatus('Transaction failed.');
+                }
+            });
+    
+        } catch (error) {
+            console.log(error);
+            setLoading(false); // Set loading to false on catch
+            setStatus('Error submitting the transaction.');
+        }
+    };
 
 
 
@@ -887,7 +988,7 @@ export default function ConnectedCollector() {
                                             </MDBBtn>
                                         </div>
                                         <div>
-                                            <MDBBtn size="lg" rounded className='bg-success' onClick={() => setScrollableModal(true)}>
+                                            <MDBBtn size="lg" rounded disabled={!parachianRegisterStatus} className='bg-success' onClick={() => setScrollableModal(true)}>
                                                 Deposite Data
                                             </MDBBtn>
                                         </div>
@@ -906,7 +1007,7 @@ export default function ConnectedCollector() {
                     <MDBModalContent>
                         <MDBModalHeader>
                             <MDBModalTitle>Enter Detail </MDBModalTitle>
-                            <MDBBtn className='btn-close' color='none' onClick={accountCreatModalToggle3}></MDBBtn>
+                            {/* <MDBBtn className='btn-close' color='none' onClick={accountCreatModalToggle3}></MDBBtn>  */}
                         </MDBModalHeader>
                         <MDBModalBody>
                             <MDBInput
@@ -917,7 +1018,7 @@ export default function ConnectedCollector() {
                                 value={cntNodeIp}
                                 onChange={(e) => setcntNodeIp(e.target.value)}
                             />
-                            
+
                             <MDBBtn onClick={conn}>Connect</MDBBtn>
                         </MDBModalBody>
                     </MDBModalContent>
@@ -1256,7 +1357,7 @@ export default function ConnectedCollector() {
                             <MDBTextArea style={{ marginBottom: '20px' }} label="RSA Public Key" value={RSApublicKey} onChange={(e) => setRSApublicKey(e.target.value)} id="textAreaExample" /> 
                             */}
                             <div>
-                                <QrCodeScanner isOpen={scrollableModal} onClose={() => setScrollableModal(false)}  />
+                                <QrCodeScanner isOpen={scrollableModal} onClose={() => setScrollableModal(false)} />
                             </div>
 
 
@@ -1270,6 +1371,48 @@ export default function ConnectedCollector() {
                     </MDBModalContent>
                 </MDBModalDialog>
             </MDBModal>
+
+            <>
+    <MDBModal staticBackdrop open={registerparachainmodal} tabIndex='-1'>
+        <MDBModalDialog scrollable centered>
+            <MDBModalContent>
+                <MDBModalHeader>
+                    <MDBModalTitle>Upload Parachain Files</MDBModalTitle>
+                    <MDBBtn
+                        className='btn-close'
+                        color='none'
+                        onClick={() => setregisterparachainmodal(false)}
+                    ></MDBBtn>
+                </MDBModalHeader>
+                <MDBModalBody>
+                    {/* Show loading indicator */}
+                    {loading ? (
+                        <div style={{ textAlign: 'center' }}>
+                            <MDBSpinner grow style={{ margin: '0 auto' }} /> {/* Loading spinner */}
+                            <p>{status}</p> {/* Status message while loading */}
+                        </div>
+                    ) : (
+                        <>
+                            {/* File upload inputs */}
+                            <div style={{ marginBottom: '20px' }}>
+                                <MDBFile label='Select WASM file' id='wasmFile' onChange={(e) => handleWasmFileChange(e, 'wasm')} />
+                            </div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <MDBFile label='Select Genesis State file' id='genesisFile' onChange={(e) => handleGenesisStateFileChange(e, 'genesis')} />
+                            </div>
+                        </>
+                    )}
+                </MDBModalBody>
+                <MDBModalFooter>
+                    {/* <MDBBtn color='secondary' onClick={() => setregisterparachainmodal(false)}>
+                        Cancel
+                    </MDBBtn> */}
+                    {!loading && <MDBBtn onClick={submitParachain}>Register</MDBBtn>}
+                </MDBModalFooter>
+            </MDBModalContent>
+        </MDBModalDialog>
+    </MDBModal>
+</>
 
 
 
