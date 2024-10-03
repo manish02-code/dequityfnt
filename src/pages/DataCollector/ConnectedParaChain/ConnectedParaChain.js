@@ -22,6 +22,7 @@ import {
     MDBCardImage,
     MDBCheckbox,
     MDBTextArea,
+    MDBSpinner,
     MDBIcon
 } from 'mdb-react-ui-kit';
 import axios from 'axios';
@@ -205,17 +206,17 @@ export default function ConnectedCollector() {
         try {
 
             // const connetiontype=  process.env.DEVELOPEMENT_TYPE === "PRODUCTION" ? `wss` ||  `ws`
-          
+
 
             const wsProvider = new WsProvider(`wss://${cntNodeIp}`); // Replace with your endpoint
 
-            
+
             // if (wsProvider.__internal__isConnected === false) {
             //     setLoading(false);
             //     alert('Error: Could not connect to the WebSocket provider.');
             //     return;
             // }
-           
+
             let api = await ApiPromise.create({ provider: wsProvider });
 
 
@@ -258,10 +259,6 @@ export default function ConnectedCollector() {
 
             accountCreatModalToggle3()
 
-            if (checkParachainStatus(paraid.toPrimitive()) === false) {
-
-                setregisterparachainmodal(true)
-            }
 
             return (api)
 
@@ -585,10 +582,11 @@ export default function ConnectedCollector() {
 
             if (isParachainRegistered) {
                 console.log(`Parachain ${ChainID} is registered.`);
-                return true;
+                return;
             } else {
                 console.error(`Parachain ${ChainID} is not registered.`);
-                return false;
+                setregisterparachainmodal(true)
+                return;
             }
         } catch (error) {
             console.error(`Error checking parachain status: ${error.message}`);
@@ -707,41 +705,43 @@ export default function ConnectedCollector() {
             setStatus('Please upload both files and provide a parachain ID.');
             return;
         }
-    
+
         setLoading(true); // Set loading to true at the beginning
         setStatus('Submitting the transaction...');
-    
+
         try {
             const wasmData = await readFileAsText(wasmFile);
             const genesisStateData = await readFileAsText(genesisStateFile);
-    
+
             const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
             const api = await ApiPromise.create({ provider: wsProvider });
-    
+
             const keyring = new Keyring({ type: 'sr25519' });
             const account = keyring.addFromUri('//Alice');
-    
+
             const genesis = {
                 genesisHead: genesisStateData,
                 validationCode: wasmData,
                 paraKind: true
             };
-    
+
             const tx = api.tx.parasSudoWrapper.sudoScheduleParaInitialize(parseInt(ChainID), genesis);
-    
+
             const unsub = await tx.signAndSend(account, async ({ status }) => {
                 if (status.isInBlock) {
                     setStatus(`Transaction included at blockHash ${status.asInBlock}`);
                 } else if (status.isFinalized) {
                     setStatus(`Transaction finalized at blockHash ${status.asFinalized}`);
-                    await new Promise((resolve) => setTimeout(resolve, 2300)); // Keep loading for 2.3 seconds
+                    setStatus('Almost done, Waiting next life cycle it will 4-5 min.')
+                    await new Promise((resolve) => setTimeout(resolve, 260000));
                     setLoading(false); // Set loading to false after the timeout
+                    window.location.reload();
                 } else if (status.isError) {
                     setLoading(false); // Set loading to false in case of error
                     setStatus('Transaction failed.');
                 }
             });
-    
+
         } catch (error) {
             console.log(error);
             setLoading(false); // Set loading to false on catch
@@ -1366,46 +1366,50 @@ export default function ConnectedCollector() {
             </MDBModal>
 
             <>
-    <MDBModal staticBackdrop open={registerparachainmodal} tabIndex='-1'>
-        <MDBModalDialog scrollable centered>
-            <MDBModalContent>
-                <MDBModalHeader>
-                    <MDBModalTitle>Upload Parachain Files</MDBModalTitle>
-                    <MDBBtn
-                        className='btn-close'
-                        color='none'
-                        onClick={() => setregisterparachainmodal(false)}
-                    ></MDBBtn>
-                </MDBModalHeader>
-                <MDBModalBody>
-                    {/* Show loading indicator */}
-                    {loading ? (
-                        <div style={{ textAlign: 'center' }}>
-                            <MDBSpinner grow style={{ margin: '0 auto' }} /> {/* Loading spinner */}
-                            <p>{status}</p> {/* Status message while loading */}
-                        </div>
-                    ) : (
-                        <>
-                            {/* File upload inputs */}
-                            <div style={{ marginBottom: '20px' }}>
-                                <MDBFile label='Select WASM file' id='wasmFile' onChange={(e) => handleWasmFileChange(e, 'wasm')} />
-                            </div>
-                            <div style={{ marginBottom: '20px' }}>
-                                <MDBFile label='Select Genesis State file' id='genesisFile' onChange={(e) => handleGenesisStateFileChange(e, 'genesis')} />
-                            </div>
-                        </>
-                    )}
-                </MDBModalBody>
-                <MDBModalFooter>
-                    {/* <MDBBtn color='secondary' onClick={() => setregisterparachainmodal(false)}>
+                <MDBModal staticBackdrop open={registerparachainmodal} tabIndex='-1'>
+                    <MDBModalDialog scrollable centered>
+                        <MDBModalContent>
+                            <MDBModalHeader>
+                                <MDBModalTitle>Upload Parachain Files</MDBModalTitle>
+                                <MDBBtn
+                                    className='btn-close'
+                                    color='none'
+                                    onClick={() => setregisterparachainmodal(false)}
+                                ></MDBBtn>
+                            </MDBModalHeader>
+                            <MDBModalBody>
+
+                                {loading ? (
+                                    <div style={{ textAlign: 'center' }}>
+
+                                        <MDBSpinner color='success'>
+                                            <span className='visually-hidden' style={{ margin: '0 auto' }}>Please Wait..</span>
+                                        </MDBSpinner>
+                                        <p>{status}</p>
+                                    
+                                    </div>
+                                ) : (
+                                    <>
+
+                                        <div style={{ marginBottom: '20px' }}>
+                                            <MDBFile label='Select WASM file' id='wasmFile' onChange={(e) => handleWasmFileChange(e, 'wasm')} />
+                                        </div>
+                                        <div style={{ marginBottom: '20px' }}>
+                                            <MDBFile label='Select Genesis State file' id='genesisFile' onChange={(e) => handleGenesisStateFileChange(e, 'genesis')} />
+                                        </div>
+                                    </>
+                                )}
+                            </MDBModalBody>
+                            <MDBModalFooter>
+                                {/* <MDBBtn color='secondary' onClick={() => setregisterparachainmodal(false)}>
                         Cancel
                     </MDBBtn> */}
-                    {!loading && <MDBBtn onClick={submitParachain}>Register</MDBBtn>}
-                </MDBModalFooter>
-            </MDBModalContent>
-        </MDBModalDialog>
-    </MDBModal>
-</>
+                                {!loading && <MDBBtn onClick={submitParachain}>Register</MDBBtn>}
+                            </MDBModalFooter>
+                        </MDBModalContent>
+                    </MDBModalDialog>
+                </MDBModal>
+            </>
 
 
 
