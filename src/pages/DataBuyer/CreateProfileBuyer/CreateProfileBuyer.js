@@ -302,7 +302,7 @@ const CreateProfileBuyer = () => {
               </MDBModalBody>
               <MDBModalFooter>
 
-                <MDBBtn onClick={handlePasswordSubmit}>Sing Transaction</MDBBtn>
+                <MDBBtn onClick={handlePasswordSubmit}>Sign Transaction</MDBBtn>
               </MDBModalFooter>
             </MDBModalContent>
           </MDBModalDialog>

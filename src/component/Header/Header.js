@@ -309,6 +309,7 @@ function Header() {
                     rsaPublicKey:Rsapublic,
             });
             localStorage.setItem('Selected Account DepositeID', res.data);
+            console.log(res.data)
             return(res.data);
         } catch (error) {
             console.log(error);
