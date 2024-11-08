@@ -51,8 +51,6 @@ export default function DataCollector() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [receiverAddress, setReceiverAddress] = useState('');
   const [amount, setAmount] = useState('');
-  const [HostWarring, setHostWarring] = useState('');
-  const [UsernameWarring, setUsernameWarring] = useState('');
 
 
   const [cntNodeIp, setcntNodeIp] = useState("")
@@ -123,39 +121,10 @@ export default function DataCollector() {
 
       if (/\s/.test(host) || /\s/.test(paraId) || /\s/.test(port) || /\s/.test(username)) {
         setAlertMessage("Fields should not contain spaces.");
-        // setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
-        // setLoading(false);
-        // setuploadLoading(false);
-        if (/\s/.test(host)) {
-          setHostWarring('0 0 0 0.2rem rgba(255, 87, 51, 0.25)')
-          setLoading(false);
-          setuploadLoading(false);
-
-          setTimeout(() => {
-            setHostWarring(' ');
-          }, 5000);
-
-          return
-        }
-        if (/\s/.test(username)) {
-          setUsernameWarring('0 0 0 0.2rem rgba(255, 87, 51, 0.25)')
-          setLoading(false);
-          setuploadLoading(false);
-
-          setTimeout(() => {
-            setUsernameWarring(' ');
-          }, 5000);
-
-
-          return
-        }
-
-
-
+        setGifURL("https://cdn.dribbble.com/users/251873/screenshots/9388228/error-img.gif");
+        setLoading(false);
+        setuploadLoading(false);
         console.log("contain Spaces")
-
-
-
         return;
       }
       if (selectedFile) {
@@ -303,18 +272,8 @@ export default function DataCollector() {
               <MDBCard className='m-5' style={{ maxWidth: '600px' }}>
                 <MDBCardBody className='px-5'>
                   <h2 className="text-uppercase text-center mb-5">Create Your Blockchain</h2>
-                  <MDBInput
-                    wrapperClass='mb-4'
-                    label='Host Name'
-                    size='lg'
-                    type='text'
-                    value={host}
-                    onChange={(e) => setHost(e.target.value)}
-                    style={{
-                      borderColor: '#FF5733',
-                      boxShadow: HostWarring,
-                    }}
-                  />                  <MDBInput wrapperClass='mb-4' label='Port Number' size='lg' type='number' value={port} onChange={(e) => setPort(e.target.value)} />
+                  <MDBInput wrapperClass='mb-4' label='Host Name' size='lg' type='text' value={host} onChange={(e) => setHost(e.target.value)} />
+                  <MDBInput wrapperClass='mb-4' label='Port Number' size='lg' type='number' value={port} onChange={(e) => setPort(e.target.value)} />
                   {/* <MDBInput wrapperClass='mb-4' label='Allocated ParaId' size='lg' type='number' value={paraId} onChange={(e) => setParaId(e.target.value)} /> */}
 
                   {paraId == null ? (
@@ -344,12 +303,7 @@ export default function DataCollector() {
 
                   )}
 
-                  <MDBInput wrapperClass='mb-4' label='UserName' size='lg' type='text'
-                    style={{
-                      borderColor: '#FF5733',
-                      boxShadow: UsernameWarring,
-                    }}
-                    value={username} onChange={(e) => setUsername(e.target.value)} />
+                  <MDBInput wrapperClass='mb-4' label='UserName' size='lg' type='text' value={username} onChange={(e) => setUsername(e.target.value)} />
                   <MDBFile wrapperClass='mb-4' onChange={handleFileChange} size='lg' id='customFile' />
                   <MDBRow>
                     <MDBCol>
@@ -363,11 +317,7 @@ export default function DataCollector() {
                       </MDBBtn>
                     </MDBCol>
                   </MDBRow>
-                  {alertMessage && (
-                    <div className="alert-message" >
-                      {alertMessage}
-                    </div>
-                  )}
+                  {alertMessage && <div className="alert-message">{alertMessage}</div>}
                   {statusMessage && <div className="status-message">{statusMessage}</div>}
                 </MDBCardBody>
               </MDBCard>

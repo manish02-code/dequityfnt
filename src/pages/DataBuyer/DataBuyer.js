@@ -244,7 +244,6 @@ export default function DataBuyer() {
     setuploadLoading(false)
     setGifURL("https://www.clipartbest.com/cliparts/dTr/6aA/dTr6aAxnc.gif")
     // location.href = "localhost:3000/DataBuyer";
-    window.location.reload();
     navigate("/DataBuyer")
 
   }
@@ -408,10 +407,10 @@ export default function DataBuyer() {
         RSaPVtKey: RSAPrivetKey
       });
 
-   
+      console.log(response);
 
       const { file, filename, mimeType } = response.data;
- 
+      console.log(response.data)
 
       // Convert base64 string to binary data
       const binaryString = atob(file);
@@ -931,7 +930,7 @@ export default function DataBuyer() {
               </MDBModalBody>
               <MDBModalFooter>
 
-                <MDBBtn onClick={handlePasswordSubmit}>Sign Transaction</MDBBtn>
+                <MDBBtn onClick={handlePasswordSubmit}>Sing Transaction</MDBBtn>
               </MDBModalFooter>
             </MDBModalContent>
           </MDBModalDialog>

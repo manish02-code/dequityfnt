@@ -172,9 +172,10 @@ export default function Participant() {
 
   const genrateQrCode = async () => {
     try {
-      console.log("Working...",DepoId)
-      QRCode.toDataURL(DepoId).then(res=>{   setQrcodeURL(res)})
-    
+      console.log("Working...")
+      const response = await QRCode.toDataURL(DepoId);
+      console.log(response)
+      setQrcodeURL(response);
     } catch (error) {
       console.log(error);
 
@@ -746,9 +747,9 @@ export default function Participant() {
         setOfferRecord(result.appliedofferId)
 
         const { data: balance } = await api.query.system.account(accountAdddress);
-
+        // The balance is divided into free, reserved, and miscFrozen fields
         
-        const formattedBalance = formatBalance(balance.free, { decimals: 12, withUnit: 'DQT' }); 
+        const formattedBalance = formatBalance(balance.free, { decimals: 12, withUnit: 'DQT' }); // or 'KSM' for Kusama
         setaccountBalance(formattedBalance)
 
     
@@ -1242,7 +1243,7 @@ export default function Participant() {
                   </MDBModalBody>
                   <MDBModalFooter>
 
-                    <MDBBtn onClick={handlePasswordSubmit}>sign transaction</MDBBtn>
+                    <MDBBtn onClick={handlePasswordSubmit}>Sing Transaction</MDBBtn>
                   </MDBModalFooter>
                 </MDBModalContent>
               </MDBModalDialog>

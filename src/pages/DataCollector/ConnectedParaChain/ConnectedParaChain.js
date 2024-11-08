@@ -2,8 +2,6 @@
 import React from "react";
 import { Buffer } from 'buffer';
 
-import { Scanner } from '@yudiel/react-qr-scanner';
-
 
 import {
     MDBBtn,
@@ -28,18 +26,16 @@ import {
     MDBIcon
 } from 'mdb-react-ui-kit';
 import axios from 'axios';
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { formatBalance } from '@polkadot/util';
-import { decodeAddress, encodeAddress } from '@polkadot/util-crypto';
 
 
 import { ApiPromise, WsProvider } from '@polkadot/api';
-import { mnemonicGenerate } from '@polkadot/util-crypto';
+import { encodeAddress, mnemonicGenerate } from '@polkadot/util-crypto';
 import { Keyring } from '@polkadot/keyring';
 
 import { Html5QrcodeScanner } from "html5-qrcode";
 
-import { useParams, useNavigate } from "react-router-dom"
 
 
 export default function ConnectedCollector() {
@@ -58,7 +54,6 @@ export default function ConnectedCollector() {
     const [sovereignAccount, setsovereignAccount] = useState('')
     const [sudoAccount, setSudoAccout] = useState('')
     const [accountBalance, setaccountBalance] = useState('')
-    const [fundrequestStatus, setfundrequestStatus] = useState(false)
 
     const [QRcodedata, setQRcodedata] = useState('No result');
 
@@ -67,12 +62,9 @@ export default function ConnectedCollector() {
     const [status, setStatus] = useState('');
     const [registerparachainmodal, setregisterparachainmodal] = useState(false);
     const [loading, setLoading] = useState(false);
-    const [isScanning, setIsScanning] = useState(true); // State to control the scanning
-    const [scanResult, setScanResult] = useState(null);
-
 
     const [accountCreatModal3, setaccountCreatModal3] = useState(false);
-    const [cntNodeIp, setcntNodeIp] = useState('')
+    const [cntNodeIp, setcntNodeIp] = useState("")
     const [cntNodePort, setcntNodePort] = useState(8844)
     const accountCreatModalToggle3 = () => {
 
@@ -87,8 +79,6 @@ export default function ConnectedCollector() {
     const [ParticipantaccountID, setParticipantaccountID] = useState("")
     const [perticipentModal, setperticipentModal] = useState(false);
 
-    const [bgcolor, setbgcolor] = useState('#eee')
-
     const CreateParticipent = () => {
         setParticipantname(" ")
         setParticipantage(null)
@@ -98,9 +88,6 @@ export default function ConnectedCollector() {
         setperticipentModal(!perticipentModal)
     };
 
-
-
-    const navigate = useNavigate();
 
     const addrecordmodal = () => {
         setuploadLoading(!uploadLoading)
@@ -112,9 +99,6 @@ export default function ConnectedCollector() {
         sethasCID('')
         setPerticipentEncyKey('')
         setScrollableModal(false)
-        setIsScanning(true)
-        setScanResult(null)
-
 
     };
 
@@ -129,40 +113,11 @@ export default function ConnectedCollector() {
 
 
     /////////////////////////////////////////////////////
-    const CountdownTimer = ({ isModalOpen, onComplete }) => {
-        const initialTime = 5 * 60; // Set your initial time in seconds
-        const [timeRemaining, setTimeRemaining] = useState(initialTime);
+    //QRcode Scanning Part
 
-        // Reset timer whenever the modal opens
-        useEffect(() => {
-            if (isModalOpen) {
-                setTimeRemaining(initialTime);
-            }
-        }, [isModalOpen, initialTime]);
 
-        useEffect(() => {
-            if (timeRemaining === 0) {
-                onComplete(); // Perform any action when countdown completes
-                return; // Exit if countdown is complete
-            }
 
-            const timerInterval = setInterval(() => {
-                setTimeRemaining((prevTime) => prevTime - 1);
-            }, 1000);
 
-            return () => clearInterval(timerInterval); // Cleanup on unmount
-        }, [timeRemaining]);
-
-        const minutes = Math.floor(timeRemaining / 60);
-        const seconds = timeRemaining % 60;
-
-        return (
-            <div>
-                <p>Getting On bord in </p>
-                <p>{` ${minutes}m ${seconds}s`}</p>
-            </div>
-        );
-    };
     /////////////////////////////////////////////////////
     const [file, setFile] = useState(null);
     const [RSApublicKey, setRSApublicKey] = useState('')
@@ -253,14 +208,14 @@ export default function ConnectedCollector() {
             // const connetiontype=  process.env.DEVELOPEMENT_TYPE === "PRODUCTION" ? `wss` ||  `ws`
 
 
-            const wsProvider = new WsProvider(`wss://${cntNodeIp}`);
+            const wsProvider = new WsProvider(`wss://${cntNodeIp}`); // Replace with your endpoint
 
-            wsProvider.on('error', (error) => {
-                alert(`Invalid parachain address or Parachain is offline.`);
-                setparachianConnectionStatus(false);
 
-                wsProvider.disconnect()
-            });
+            // if (wsProvider.__internal__isConnected === false) {
+            //     setLoading(false);
+            //     alert('Error: Could not connect to the WebSocket provider.');
+            //     return;
+            // }
 
             let api = await ApiPromise.create({ provider: wsProvider });
 
@@ -271,7 +226,7 @@ export default function ConnectedCollector() {
 
             const paraid = await api.query.parachainInfo.parachainId()
             setChainID(paraid.toPrimitive())
-
+            console.log("Connected to you node", paraid.toPrimitive())
 
             checkParachainStatus(paraid.toPrimitive())
 
@@ -289,13 +244,17 @@ export default function ConnectedCollector() {
             await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/para/getSovereignAccount`, params)
                 .then(response => {
                     setsovereignAccount(response.data.accountAddress);
-                    fetchSovereignAccountBalance(response.data.accountAddress)
+                    console.log(response)
                 })
                 .catch(error => {
                     console.error(error);
                 });
 
+            const { data: balance } = await api.query.system.account(sovereignAccount);
 
+            const formattedBalance = formatBalance(balance.free, { decimals: 12, withUnit: 'DQT' });
+            console.log(balance)
+            setaccountBalance(formattedBalance)
 
 
             accountCreatModalToggle3()
@@ -310,8 +269,6 @@ export default function ConnectedCollector() {
         }
 
     }
-
-
 
 
     async function getEncodedCallData(Participantname, Participantage, Participantgender, Participantethnicity, ParticipantaccountID) {
@@ -623,8 +580,6 @@ export default function ConnectedCollector() {
             console.log(`Parachain  registered: `, isParachainRegistered);
             setparachianRegisterStatus(isParachainRegistered)
 
-
-
             if (isParachainRegistered) {
                 console.log(`Parachain ${ChainID} is registered.`);
                 return;
@@ -669,78 +624,52 @@ export default function ConnectedCollector() {
         }
 
     }
+    const QrCodeScanner = ({ isOpen, onClose }) => {
+        const [scanResult, setScanResult] = useState(null);
+        const [scanning, setScanning] = useState(false);
 
+        useEffect(() => {
+            if (isOpen && !scanning) {
+                const scanner = new Html5QrcodeScanner('reader', {
+                    qrbox: {
+                        width: 250,
+                        height: 250,
+                    },
+                    fps: 10,
+                });
 
+                const onScanSuccess = (result) => {
+                    if (!scanning) {
+                        setScanning(true);
+                        scanner.clear();
+                        setScanResult(result);
+                        DecrytpDId(result);
+                    }
+                };
 
-    // const QrCodeScanner = ({ isOpen, onClose }) => {
-    //     const [scanResult, setScanResult] = useState(null);
-    //     const [scanning, setScanning] = useState(false);
+                const onScanError = (err) => {
+                    console.warn(err);
+                };
 
-    //     useEffect(() => {
-    //         let scanner;
+                scanner.render(onScanSuccess, onScanError);
 
-    //         const startScanner = () => {
-    //             scanner = new Html5QrcodeScanner('reader', {
-    //                 qrbox: {
-    //                     width: 250,
-    //                     height: 250,
-    //                 },
-    //                 fps: 10,
-    //             });
+                return () => {
+                    scanner.clear();
+                };
+            }
+        }, [isOpen, scanning]);
 
-    //             const onScanSuccess = (result) => {
-    //                 if (!scanning) {
-    //                     setScanning(true);
-    //                     setScanResult(result);
-    //                     DecrytpDId(result);
-
-    //                     // Stop the scanner to release the camera
-    //                     scanner.stop();
-
-
-
-
-    //                     onClose();
-    //                     scanner.clear();
-    //                 }
-    //             };
-
-    //             const onScanError = (err) => {
-    //                 console.warn(err);
-    //                 console.log(scanner.getCameras())
-
-    //             };
-
-    //             scanner.render(onScanSuccess, onScanError);
-    //         };
-
-    //         if (isOpen && !scanning) {
-    //             startScanner();
-    //         }
-
-    //         return () => {
-    //             if (scanner) {
-    //                 // Clear the scanner and stop the camera stream when unmounting
-    //                 scanner.clear();
-    //             }
-    //         };
-    //     }, [isOpen, scanning, onClose]);
-
-    //     return (
-    //         <div>
-    //             <p>Scan your QR code</p>
-    //             {scanResult ? (
-    //                 <div>Data: {scanResult}</div>
-    //             ) : (
-    //                 <div id="reader"></div>
-    //             )}
-    //         </div>
-    //     );
-    // };
-
-
-
-
+        return (
+            <div>
+                <p>Scan your QR code</p>
+                {scanResult ? (
+                    <div>Data: {scanResult}</div>
+                ) : (
+                    <div id="reader"></div>
+                )}
+            </div>
+        );
+    };
 
     const handleWasmFileChange = (event) => {
         setWasmFile(event.target.files[0]);
@@ -751,7 +680,7 @@ export default function ConnectedCollector() {
     };
 
 
-
+    // Helper function to read a file as text using FileReader
     const readFileAsText = (file) => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
@@ -777,14 +706,14 @@ export default function ConnectedCollector() {
             return;
         }
 
-        setLoading(true);
+        setLoading(true); // Set loading to true at the beginning
         setStatus('Submitting the transaction...');
 
         try {
             const wasmData = await readFileAsText(wasmFile);
             const genesisStateData = await readFileAsText(genesisStateFile);
 
-            const wsProvider = new WsProvider(process.env.REACT_APP_RELAY);
+            const wsProvider = new WsProvider(process.env.REACT_APP_RELAY); // Replace with your endpoint
             const api = await ApiPromise.create({ provider: wsProvider });
 
             const keyring = new Keyring({ type: 'sr25519' });
@@ -803,7 +732,7 @@ export default function ConnectedCollector() {
                     setStatus(`Transaction included at blockHash ${status.asInBlock}`);
                 } else if (status.isFinalized) {
                     setStatus(`Transaction finalized at blockHash ${status.asFinalized}`);
-                    setStatus('Almost done, Waiting next life cycle.')
+                    setStatus('Almost done, Waiting next life cycle it will 4-5 min.')
                     await new Promise((resolve) => setTimeout(resolve, 260000));
                     setLoading(false); // Set loading to false after the timeout
                     window.location.reload();
@@ -823,123 +752,6 @@ export default function ConnectedCollector() {
 
 
 
-
-    const fetchSovereignAccountBalance = async (sovereignAccountAddress) => {
-        try {
-
-
-
-            const wsProvider = new WsProvider(process.env.REACT_APP_RELAY);
-            let api = await ApiPromise.create({ provider: wsProvider });
-
-            const { data: balance } = await api.query.system.account(sovereignAccountAddress);
-
-            const formattedBalance = formatBalance(balance.free, { decimals: 12, withUnit: 'DQT' });
-
-            setaccountBalance(formattedBalance);
-            console.log("balance fotmatted: ", accountBalance)
-
-
-        } catch (error) {
-            console.error('Error fetching Sovereign Account balance:', error);
-        }
-    };
-
-
-    const requestFunds = async (event) => {
-        event.preventDefault();
-        try {
-            fetchSovereignAccountBalance(sovereignAccount)
-
-
-            const params = {
-                address: sovereignAccount,
-            };
-
-            await axios.post(`${process.env.REACT_APP_BACKEND_SERVER}/para/AccountFundRequest`, params)
-                .then((response) => {
-                    setfundrequestStatus(true);
-                    setbgcolor('#C8E6C9');
-                    fetchSovereignAccountBalance(sovereignAccount)
-                })
-                .catch((error) => {
-                    console.error(error);
-                    setfundrequestStatus(false);
-                    setbgcolor('#f1948a');
-                });
-
-
-
-            console.log("balance after: ", accountBalance)
-
-        } catch (error) {
-            console.error(error);
-        }
-        
-    };
-
-
-
-
-    const handleDownload = async () => {
-        try {
-
-            console.log(ChainID)
-            const params = {
-                paraid: ChainID,
-            };
-
-
-            const response = await axios.post(
-                `${process.env.REACT_APP_BACKEND_SERVER}/para/FecthParachainFile`,
-                params,
-                { responseType: 'blob' }
-            );
-
-
-            const blob = new Blob([response.data], { type: 'application/zip' });
-
-            const downloadUrl = window.URL.createObjectURL(blob);
-
-            const link = document.createElement('a');
-            link.href = downloadUrl;
-            link.setAttribute('download', `files-${ChainID}.zip`);
-
-            document.body.appendChild(link);
-            link.click();
-
-            link.remove();
-        } catch (error) {
-            console.error('Error downloading files:', error);
-        }
-    };
-
-
-
-
-
-
-    const handleScan = (result) => {
-        if (result[0].rawValue) {
-            const scannedValue = result[0].rawValue;
-            DecrytpDId(scannedValue);
-            setScanResult(scannedValue);
-            setIsScanning(false);
-        }
-    };
-
-
-    const formatScanResult = (result) => {
-        if (result.length <= 10) {
-            return result;
-        }
-        const firstPart = result.substring(0, 8);
-        const lastPart = result.slice(-8);
-        return `${firstPart}...${lastPart}`;
-    };
-
-
-
     useEffect(() => {
 
         const fetchData = async () => {
@@ -953,9 +765,9 @@ export default function ConnectedCollector() {
 
 
         return () => {
-
+            // Cleanup code here if necessary
         };
-    }, [parachianConnectionStatus]);
+    }, [parachianConnectionStatus]); // Add any dependencies if needed
 
 
 
@@ -1020,8 +832,7 @@ export default function ConnectedCollector() {
                                             backgroundColor: `#B9EDCB`,
                                             borderRadius: '10px',
                                             padding: '10px',
-                                            marginTop: '10px',
-                                            color: "white"
+                                            marginTop: '10px'
                                         }}
                                     >
                                         <p className="text-muted mb-1">
@@ -1033,8 +844,7 @@ export default function ConnectedCollector() {
                                             backgroundColor: `#FB5558`,
                                             borderRadius: '10px',
                                             padding: '10px',
-                                            marginTop: '10px',
-                                            color: "white"
+                                            marginTop: '10px'
                                         }}
                                     >
                                         <p className="text-muted mb-1">
@@ -1050,25 +860,15 @@ export default function ConnectedCollector() {
 
 
                                     <div
-
-                                    >
-                                        {parseFloat(accountBalance) <= 0 ? (<div style={{
-                                            backgroundColor: '#FB5558',
+                                        style={{
+                                            backgroundColor: '#eee',
                                             borderRadius: '10px',
                                             padding: '10px',
-                                            marginTop: '10px',
-                                            color: "white"
-                                        }}><p className="text-muted mb-1">Balance: {accountBalance} </p>
-                                            <p className="text-muted mb-1"></p></div>)
-
-                                            : (<div style={{
-                                                backgroundColor: '#B9EDCB',
-                                                borderRadius: '10px',
-                                                padding: '10px',
-                                                marginTop: '10px'
-                                            }}> <p className="text-muted mb-1">Balance: {accountBalance} </p>
-                                                <p className="text-muted mb-1"></p></div>)}
-
+                                            marginTop: '10px'
+                                        }}
+                                    >
+                                        <p className="text-muted mb-1">Balance: {accountBalance} </p>
+                                        <p className="text-muted mb-1"></p>
                                     </div>
 
                                     <div
@@ -1176,35 +976,17 @@ export default function ConnectedCollector() {
                                         }}
                                     >
                                         <div>
-                                            <MDBBtn size="lg" rounded disabled={!parachianRegisterStatus || parseFloat(accountBalance) <= 0} className='bg-warning' onClick={CreateParticipent}>
+                                            <MDBBtn size="lg" rounded disabled={!parachianRegisterStatus} className='bg-warning' onClick={CreateParticipent}>
                                                 Create Participant
                                             </MDBBtn>
                                         </div>
                                         <div>
-                                            <MDBBtn size="lg" rounded disabled={!parachianRegisterStatus || parseFloat(accountBalance) <= 0} className='bg-success' onClick={() => setScrollableModal(true)}>
+                                            <MDBBtn size="lg" rounded disabled={!parachianRegisterStatus} className='bg-success' onClick={() => setScrollableModal(true)}>
                                                 Deposite Data
                                             </MDBBtn>
                                         </div>
-
-
-
                                     </div>
 
-                                    <div style={{
-                                        backgroundColor: bgcolor,
-                                        borderRadius: '10px',
-                                        padding: '10px',
-                                        marginTop: '10px',
-                                        display: 'flex',
-                                        justifyContent: 'center'
-                                    }}>
-                                        <div>
-                                            <MDBBtn size="lg" rounded disabled={!parachianRegisterStatus} className='bg-success' onClick={requestFunds}>
-                                                Request Fund
-                                            </MDBBtn>
-                                        </div>
-
-                                    </div>
 
                                 </MDBCardBody>
                             </MDBCard>
@@ -1218,7 +1000,7 @@ export default function ConnectedCollector() {
                     <MDBModalContent>
                         <MDBModalHeader>
                             <MDBModalTitle>Enter Detail </MDBModalTitle>
-                            <MDBBtn className='btn-close' color='none' onClick={() => { navigate("/DataCollector") }}></MDBBtn>
+                            {/* <MDBBtn className='btn-close' color='none' onClick={accountCreatModalToggle3}></MDBBtn>  */}
                         </MDBModalHeader>
                         <MDBModalBody>
                             <MDBInput
@@ -1548,92 +1330,40 @@ export default function ConnectedCollector() {
 
 
 
-            <MDBModal staticBackdrop open={scrollableModal} onClose={() => {
-                setScrollableModal(false);
-                setIsScanning(true);
-                setScanResult(null);
-            }} tabIndex='-1'>
-                <MDBModalDialog scrollable centered>
+            <MDBModal staticBackdrop open={scrollableModal} onClose={() => setScrollableModal(false)} tabIndex='-1'>
+                <MDBModalDialog scrollable centered >
                     <MDBModalContent>
                         <MDBModalHeader>
                             <MDBModalTitle>Add Record</MDBModalTitle>
-                            <MDBBtn className='btn-close' color='none' onClick={() => {
-                                setScrollableModal(false);
-                                setIsScanning(true);
-                                setScanResult(null);
-                            }}></MDBBtn>
+                            <MDBBtn
+                                className='btn-close'
+                                color='none'
+                                onClick={() => setScrollableModal(false)}
+                            ></MDBBtn>
                         </MDBModalHeader>
                         <MDBModalBody>
-
-
-                            <div>
-                                <div style={{ marginBottom: '20px' }}>
-                                    <MDBFile label='Select your record' id='customFile' onChange={handleFileChange} />
-                                </div>
-                                <div>
-                                    {isScanning ? (
-                                        <div style={{
-                                            width: '300px',
-                                            height: '300px',
-                                            border: '2px solid #007bff',
-                                            borderRadius: '10px',
-                                            margin: '0 auto',
-                                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
-                                            overflow: 'hidden',
-                                            position: 'relative',
-                                        }}>
-                                            <Scanner
-                                                onScan={handleScan}
-                                                style={{
-                                                    width: '100%',
-                                                    height: '100%'
-                                                }}
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div style={{
-                                            textAlign: 'center',
-                                            marginTop: '20px',
-                                            backgroundColor: '#88dc8c',
-                                            padding: '15px',
-                                            borderRadius: '8px',
-                                            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                                            color: '#333'
-                                        }}>
-                                            <p>Scan successful: {formatScanResult(scanResult)}</p>
-                                        </div>
-                                    )}
-                                </div>
+                            <div style={{ marginBottom: '20px' }}>
+                                <MDBFile label='Select you record' id='customFile' onChange={handleFileChange} />
                             </div>
+                            {/* <MDBInput style={{ marginBottom: '20px' }} label="Account ID" value={depositedAccount} onChange={(e) => setdepositedAccount(e.target.value)} id="form1" type="text" />
 
-
-
-
+                            <MDBTextArea style={{ marginBottom: '20px' }} label="RSA Public Key" value={RSApublicKey} onChange={(e) => setRSApublicKey(e.target.value)} id="textAreaExample" /> 
+                            */}
+                            <div>
+                                <QrCodeScanner isOpen={scrollableModal} onClose={() => setScrollableModal(false)} />
+                            </div>
 
 
                         </MDBModalBody>
                         <MDBModalFooter>
-                            <MDBBtn color='secondary' onClick={() => {
-                                setScrollableModal(!setScrollableModal);
-                                setIsScanning(true);
-                                setScanResult(null);
-                            }}>
+                            <MDBBtn color='secondary' onClick={() => setScrollableModal(!setScrollableModal)}>
                                 Cancel
                             </MDBBtn>
-
-                            {scanResult && file ? (
-                                <MDBBtn onClick={IPFSUplod2}>Add Record</MDBBtn>
-                            ) : (
-                                <MDBBtn disabled>Add Record</MDBBtn>
-                            )}
+                            <MDBBtn onClick={IPFSUplod2}>Add Record</MDBBtn>
                         </MDBModalFooter>
                     </MDBModalContent>
                 </MDBModalDialog>
             </MDBModal>
-
-
-
-
 
             <>
                 <MDBModal staticBackdrop open={registerparachainmodal} tabIndex='-1'>
@@ -1656,33 +1386,10 @@ export default function ConnectedCollector() {
                                             <span className='visually-hidden' style={{ margin: '0 auto' }}>Please Wait..</span>
                                         </MDBSpinner>
                                         <p>{status}</p>
-                                        <CountdownTimer />
-
-
+                                    
                                     </div>
                                 ) : (
                                     <>
-
-                                        <div
-                                            style={{
-                                                backgroundColor: '#eee',
-                                                borderRadius: '10px',
-                                                padding: '10px',
-                                                marginTop: '10px',
-                                                display: 'flex',
-                                                justifyContent: 'center'
-                                            }}
-                                        >
-                                            <div>
-                                                <MDBBtn size="lg" rounded className='bg-success' onClick={handleDownload}>
-                                                    Download Files
-                                                </MDBBtn>
-                                            </div>
-
-                                        </div>
-
-
-
 
                                         <div style={{ marginBottom: '20px' }}>
                                             <MDBFile label='Select WASM file' id='wasmFile' onChange={(e) => handleWasmFileChange(e, 'wasm')} />

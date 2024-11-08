@@ -301,7 +301,7 @@ const CreateParticipantProfile = () => {
               </MDBModalBody>
               <MDBModalFooter>
 
-                <MDBBtn onClick={handlePasswordSubmit}>Sign Transaction</MDBBtn>
+                <MDBBtn onClick={handlePasswordSubmit}>Sing Transaction</MDBBtn>
               </MDBModalFooter>
             </MDBModalContent>
           </MDBModalDialog>
