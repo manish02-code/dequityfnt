@@ -172,9 +172,7 @@ export default function Participant() {
 
   const genrateQrCode = async () => {
     try {
-      console.log("Working...")
       const response = await QRCode.toDataURL(DepoId);
-      console.log(response)
       setQrcodeURL(response);
     } catch (error) {
       console.log(error);
