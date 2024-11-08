@@ -173,7 +173,13 @@ export default function Participant() {
   const genrateQrCode = async () => {
     try {
 <<<<<<< HEAD
+<<<<<<< HEAD
       const response = await QRCode.toDataURL(DepoId);
+=======
+      console.log("Working...")
+      const response = await QRCode.toDataURL(DepoId);
+      console.log(response)
+>>>>>>> parent of eed591c (23-10-2024 before change)
 =======
       console.log("Working...")
       const response = await QRCode.toDataURL(DepoId);
